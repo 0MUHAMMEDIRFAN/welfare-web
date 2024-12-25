@@ -22,26 +22,26 @@ function getSingularForm($tableName)
 // Define admin hierarchy  
 $adminHierarchy = [
     'state_admin' => [
-        'manages' => 'district_admin',
-        'table' => 'districts',
+        'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin", "collector"],
+        'table' => ['districts', "mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
         'parent_field' => null
     ],
     'district_admin' => [
-        'manages' => 'mandalam_admin',
-        'table' => 'mandalams',
+        'manages' => ['mandalam_admin', "localbody_admin", "unit_admin", "collector"],
+        'table' => ["mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
         'parent_field' => 'district_id'
     ],
     'mandalam_admin' => [
-        'manages' => 'localbody_admin',
-        'table' => 'localbodies',
+        'manages' => ["localbody_admin", "unit_admin", "collector"],
+        'table' => ["localbodies", "units", "units"],
         'name_field' => 'name',
         'parent_field' => 'mandalam_id'
     ],
     'localbody_admin' => [
-        'manages' => ['unit_admin', 'collector'],
-        'table' => 'units',
+        'manages' => ["unit_admin", "collector"],
+        'table' => ['units', 'units'],
         'name_field' => 'name',
         'parent_field' => 'localbody_id'
     ]
@@ -54,10 +54,11 @@ if (!isset($adminHierarchy[$currentUserRole])) {
 
 // Get the type of admin being managed  
 $managingRole = '';
-if ($currentUserRole === 'localbody_admin') {
-    $managingRole = isset($_GET['type']) && $_GET['type'] === 'collector' ? 'collector' : 'unit_admin';
+if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUserRole]['manages'])) {
+    $managingRole = $_GET['type'];
 } else {
-    $managingRole = $adminHierarchy[$currentUserRole]['manages'];
+    header("Location: ?type=" . $adminHierarchy[$currentUserRole]['manages'][0]);
+    exit();
 }
 
 // Check if we're editing  
@@ -67,13 +68,13 @@ $placeData = null;
 
 // Get current level configuration  
 $currentLevel = $adminHierarchy[$currentUserRole];
-$singularTableName = getSingularForm($currentLevel['table']);
+$singularTableName = getSingularForm($currentLevel['table'][array_search($managingRole, $currentLevel['manages'])]);
 
 // Validate place_id  
 
 if (isset($_GET['place_id'])) {
     try {
-        $query = "SELECT * FROM {$currentLevel['table']} WHERE id = ?";
+        $query = "SELECT * FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} WHERE id = ?";
         $params = [$_GET['place_id']];
 
         if ($currentLevel['parent_field']) {
@@ -180,16 +181,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Construct the redirect URL  
         $redirect_url = "manage_admins.php";
-        if ($currentUserRole === 'localbody_admin') {
-            $redirect_url .= "?type=" . urlencode($managingRole);
-        }
+        // if ($currentUserRole === 'localbody_admin') {
+        //     $redirect_url .= "?type=" . urlencode($managingRole);
+        // }
 
         // Make sure nothing has been output yet  
         if (!headers_sent()) {
             header("Location: " . $redirect_url);
             exit();
         } else {
-            echo "<script>window.location.href='" . $redirect_url . "';</script>";
+            echo "<script>window.location.href='" . $redirect_url . "'</script>";
             exit();
         }
     } catch (Exception $e) {
@@ -267,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <select name="place_id" class="form-control" required>
                                     <option value="">Select <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></option>
                                     <?php
-                                    $query = "SELECT id, name FROM {$currentLevel['table']} WHERE 1";
+                                    $query = "SELECT id, name FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} WHERE 1";
                                     if ($currentLevel['parent_field']) {
                                         $query .= " AND {$currentLevel['parent_field']} = ?";
                                         $stmt = $pdo->prepare($query);
@@ -294,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                <a href="manage_admins.php<?php echo $currentUserRole === 'localbody_admin' ? '?type=' . $managingRole : ''; ?>"
+                                <a href="manage_admins.php"
                                     class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Back
                                 </a>
