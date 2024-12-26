@@ -25,25 +25,25 @@ $adminHierarchy = [
         'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin", "collector"],
         'table' => ['districts', "mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => null
+        'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id", "localbody_id"],
     ],
     'district_admin' => [
         'manages' => ['mandalam_admin', "localbody_admin", "unit_admin", "collector"],
         'table' => ["mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => 'district_id'
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id", "localbody_id"],
     ],
     'mandalam_admin' => [
         'manages' => ["localbody_admin", "unit_admin", "collector"],
         'table' => ["localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => 'mandalam_id'
+        'parent_field' => ["mandalam_id", "localbody_id", "localbody_id"],
     ],
     'localbody_admin' => [
         'manages' => ["unit_admin", "collector"],
         'table' => ['units', 'units'],
         'name_field' => 'name',
-        'parent_field' => 'localbody_id'
+        'parent_field' => ["localbody_id", "localbody_id"],
     ]
 ];
 
@@ -78,7 +78,7 @@ if (isset($_GET['place_id'])) {
         $params = [$_GET['place_id']];
 
         if ($currentLevel['parent_field']) {
-            $query .= " AND {$currentLevel['parent_field']} = ?";
+            $query .= " AND {$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
             $params[] = $_SESSION['user_level_id'];
         }
 
@@ -106,8 +106,8 @@ if (isset($_GET['place_id'])) {
     } catch (Exception $e) {
         die("Error: " . $e->getMessage());
     }
-    // } else {
-    //     die("Place ID is required");
+} else if ($isEditing) {
+    die("Place ID is required");
 }
 
 // Handle form submission  
@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['success_message'] = ($isEditing ? 'Updated' : 'Added') . " admin successfully";
 
         // Construct the redirect URL  
-        $redirect_url = "manage_admins.php";
+        $redirect_url = "manage_admins.php?type=$managingRole";
         // if ($currentUserRole === 'localbody_admin') {
         //     $redirect_url .= "?type=" . urlencode($managingRole);
         // }
@@ -270,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <?php
                                     $query = "SELECT id, name FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} WHERE 1";
                                     if ($currentLevel['parent_field']) {
-                                        $query .= " AND {$currentLevel['parent_field']} = ?";
+                                        $query .= " AND {$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
                                         $stmt = $pdo->prepare($query);
                                         $stmt->execute([$_SESSION['user_level_id']]);
                                     } else {
@@ -295,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
 
                             <div class="d-flex justify-content-between">
-                                <a href="manage_admins.php"
+                                <a href="manage_admins.php?type=<?php echo $managingRole; ?>"
                                     class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Back
                                 </a>

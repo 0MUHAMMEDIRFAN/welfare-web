@@ -24,25 +24,25 @@ $adminHierarchy = [
         'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin", "collector"],
         'table' => ['districts', "mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => null
+        'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id", "localbody_id"],
     ],
     'district_admin' => [
         'manages' => ['mandalam_admin', "localbody_admin", "unit_admin", "collector"],
         'table' => ["mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => 'district_id'
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id", "localbody_id"],
     ],
     'mandalam_admin' => [
         'manages' => ["localbody_admin", "unit_admin", "collector"],
         'table' => ["localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent_field' => 'mandalam_id'
+        'parent_field' => ["mandalam_id", "localbody_id", "localbody_id"],
     ],
     'localbody_admin' => [
         'manages' => ["unit_admin", "collector"],
         'table' => ['units', 'units'],
         'name_field' => 'name',
-        'parent_field' => 'localbody_id'
+        'parent_field' => ["localbody_id", "localbody_id"],
     ]
 ];
 
@@ -114,7 +114,7 @@ try {
                                AND u.role = ? ";
 
     if ($currentLevel['parent_field']) {
-        $query .= " WHERE p.{$currentLevel['parent_field']} = ?";
+        $query .= " WHERE p.{$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
     }
 
     $query .= " ORDER BY p.{$currentLevel['name_field']}";
@@ -127,7 +127,7 @@ try {
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo "<script>console.log('" . json_encode($places) . "')</script>";
+    echo "<script>console.log(" . json_encode($places) . ")</script>";
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -138,6 +138,7 @@ try {
 
 <head>
     <title>Manage <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>s</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -180,14 +181,15 @@ try {
             <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
         <?php endif; ?>
 
-
-        <div class="mb-3">
-            <?php foreach ($adminHierarchy[$currentUserRole]['manages'] as $role): ?>
-                <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
-                    <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
-                </a>
-            <?php endforeach; ?>
-        </div>
+        <?php if (count($adminHierarchy[$currentUserRole]['manages']) > 1): ?>
+            <div class="mb-3">
+                <?php foreach ($adminHierarchy[$currentUserRole]['manages'] as $role): ?>
+                    <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
+                        <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">

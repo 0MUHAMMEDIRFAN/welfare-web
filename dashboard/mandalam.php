@@ -93,7 +93,7 @@ WHERE l.mandalam_id = ?";
             <p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?><br>
                 (<?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam,
                 <?php echo htmlspecialchars($location['district_name']); ?> District)</p>
-            <p> <a href="../admin/manage_structure.php?level=localbody" class="btn btn-manage">Manage Localbodies</a><span class="gap"></span>
+            <p> <a href="../admin/manage_structure.php?level=localbody" class="btn btn-manage">Manage Organizations</a><span class="gap"></span>
                 <a href="../admin/manage_admins.php?level=localbody" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>

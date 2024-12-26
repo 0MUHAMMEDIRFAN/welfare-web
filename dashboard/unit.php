@@ -1,4 +1,5 @@
 <?php
+require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
@@ -56,8 +57,11 @@ try {
 
     // Calculate totals  
     $totalCollected = 0;
+    $totalTarget = 0;
     $totalDonations = 0;
+
     foreach ($summary as $row) {
+        // $totalTarget += $row['target_amount'];
         $totalCollected += $row['collected_amount'];
         $totalDonations += $row['donation_count'];
     }

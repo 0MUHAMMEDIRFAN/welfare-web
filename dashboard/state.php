@@ -87,11 +87,7 @@ foreach ($summary as $row) {
             <p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?> </p>
             <p>
                 <!-- <a href="bulk_mandalam_entry.php" class="btn btn-manage">Bulk Mandalam Entry</a><span class="gap"></span>    -->
-                <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Districts</a><span class="gap"></span>
-                <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Mandalams</a><span class="gap"></span>
-                <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Localbodies</a><span class="gap"></span>
-                <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Units</a><span class="gap"></span>
-                <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Collectors</a><span class="gap"></span>
+                <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Organization</a><span class="gap"></span>
                 <a href="../admin/manage_admins.php?level=district" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>

@@ -5,57 +5,83 @@ require_once '../includes/functions.php';
 
 // Check authentication  
 requireLogin();
-
+// Helper function to get singular form of table name  
+function getSingularForm($tableName)
+{
+    $irregularPlurals = [
+        'localbodies' => 'localbody',
+    ];
+    // Check if it's an irregular plural  
+    if (isset($irregularPlurals[$tableName])) {
+        return $irregularPlurals[$tableName];
+    }
+    return rtrim($tableName, 's');
+}
 // Define hierarchy levels and their relationships  
-$hierarchyLevels = [
+$adminHierarchy = [
     'state_admin' => [
-        'can_manage' => 'district',
-        // 'can_manage' => ['district','mandalam','localbody','unit'],
-        'table' => 'districts',
-        'parent_field' => null
+        'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin"],
+        'table' => ['districts', "mandalams", "localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id"],
+        'parent_field_name' => [null, 'districts', "mandalams", "localbodies"]
     ],
     'district_admin' => [
-        'can_manage' => 'mandalam',
-        // 'can_manage' => ['mandalam','localbody','unit'],
-        'table' => 'mandalams',
-        'parent_field' => 'district_id'
+        'manages' => ['mandalam_admin', "localbody_admin", "unit_admin"],
+        'table' => ["mandalams", "localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id"],
+        'parent_field_name' => ['districts', "mandalams", "localbodies"]
     ],
     'mandalam_admin' => [
-        'can_manage' => 'localbody',
-        // 'can_manage' => ['localbody','unit'],
-        'table' => 'localbodies',
-        'parent_field' => 'mandalam_id'
+        'manages' => ["localbody_admin", "unit_admin"],
+        'table' => ["localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => ["mandalam_id", "localbody_id"],
+        'parent_field_name' => ["mandalams", "localbodies"]
     ],
     'localbody_admin' => [
-        'can_manage' => 'unit',
-        // 'can_manage' => ['unit'],
-        'table' => 'units',
-        'parent_field' => 'localbody_id'
+        'manages' => ["unit_admin"],
+        'table' => ['units'],
+        'name_field' => 'name',
+        'parent_field' => ['localbody_id'],
+        'parent_field_name' => ["localbodies"]
     ]
 ];
 
 // Get current admin's level and what they can manage  
-$currentRole = $_SESSION['role'];
+$currentUserRole = $_SESSION['role'];
 
-echo "<script>console.log('" . json_encode($_SESSION) . "')</script>";
-
-if (!isset($hierarchyLevels[$currentRole])) {
+if (!isset($adminHierarchy[$currentUserRole])) {
     header("Location: {$_SESSION['level']}.php");
     exit();
 }
 
-$canManage = $hierarchyLevels[$currentRole]['can_manage'];
-$managementTable = $hierarchyLevels[$currentRole]['table'];
-$parentField = $hierarchyLevels[$currentRole]['parent_field'];
+// Get the level being managed  
+$managingRole = '';
+if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUserRole]['manages'])) {
+    $managingRole = $_GET['type'];
+} else {
+    header("Location: ?type=" . $adminHierarchy[$currentUserRole]['manages'][0]);
+    exit();
+}
+
+$currentLevel = $adminHierarchy[$currentUserRole];
+$canManage = $adminHierarchy[$currentUserRole]['manages'][array_search($managingRole, $currentLevel['manages'])];
+$managementTable = $adminHierarchy[$currentUserRole]['table'][array_search($managingRole,$currentLevel['manages'])];
+$parentField = $adminHierarchy[$currentUserRole]['parent_field'][array_search($managingRole, $currentLevel['manages'])];
+$parentFieldName = $adminHierarchy[$currentUserRole]['parent_field_name'][array_search($managingRole, $currentLevel['manages'])];
 
 // Get items to manage based on admin level  
 try {
     if ($parentField) {
-        $query = "SELECT * FROM $managementTable WHERE $parentField = :parent_id ORDER BY name";
+        $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
+              LEFT JOIN {$parentFieldName} p ON t.$parentField = p.id 
+              WHERE t.$parentField = :parent_id ORDER BY t.id";
         $stmt = $pdo->prepare($query);
         $stmt->execute([':parent_id' => $_SESSION['user_level_id']]);
     } else {
-        $query = "SELECT * FROM $managementTable ORDER BY name";
+        $query = "SELECT * FROM {$managementTable} ORDER BY id";
         $stmt = $pdo->prepare($query);
         $stmt->execute();
     }
@@ -63,25 +89,29 @@ try {
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
+echo "<script>console.log(" . json_encode($items) . ");</script>";
+echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
 
-// Get the current level name for display  
-$levelNames = [
-    'district' => 'District',
-    'mandalam' => 'Mandalam',
-    'localbody' => 'LocalBody',
-    'unit' => 'Unit'
-];
-$currentLevelName = $levelNames[$canManage];
+
 ?>
 
 <!DOCTYPE html>
 <html>
 
 <head>
-    <title>Manage <?php echo $currentLevelName; ?>s</title>
+    <title>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .table td {
+            vertical-align: middle;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
@@ -103,14 +133,25 @@ $currentLevelName = $levelNames[$canManage];
             </div>
         </div>
     </nav>
+
     <div class="container mt-4">
-        <h2>Manage <?php echo $currentLevelName; ?>s</h2>
+        <?php if (count($adminHierarchy[$currentUserRole]['manages']) > 1): ?>
+            <div class="mb-3">
+                <?php foreach ($adminHierarchy[$currentUserRole]['manages'] as $role): ?>
+                    <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
+                        <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
+        <?php endif; ?>
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><?php echo $currentLevelName; ?>s</h5>
+                <h5 class="mb-0"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h5>
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                    Add <?php echo $currentLevelName; ?>
+                    Add <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>
                 </button>
             </div>
             <div class="card-body">
@@ -118,8 +159,12 @@ $currentLevelName = $levelNames[$canManage];
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Name</th>
-                                <?php if ($canManage === 'localbody'): ?>
+                                <?php if ($parentFieldName): ?>
+                                    <th><?php echo ucfirst(getSingularForm($parentFieldName)); ?></th>
+                                <?php endif; ?>
+                                <?php if ($canManage === 'localbody_admin'): ?>
                                     <th>Type</th>
                                 <?php endif; ?>
                                 <th>Target Amount</th>
@@ -129,8 +174,12 @@ $currentLevelName = $levelNames[$canManage];
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr data-item="<?php echo $item['id']; ?>">
+                                    <td><?php echo htmlspecialchars($item['id']); ?></td>
                                     <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                    <?php if ($canManage === 'localbody'): ?>
+                                    <?php if ($parentFieldName): ?>
+                                        <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
+                                    <?php endif; ?>
+                                    <?php if ($canManage === 'localbody_admin'): ?>
                                         <td><?php echo htmlspecialchars($item['type']); ?></td>
                                     <?php endif; ?>
                                     <td class="target-amount">₹<?php echo number_format($item['target_amount'], 2); ?></td>
@@ -160,7 +209,7 @@ $currentLevelName = $levelNames[$canManage];
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New <?php echo $currentLevelName; ?></h5>
+                    <h5 class="modal-title">Add New <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -171,10 +220,10 @@ $currentLevelName = $levelNames[$canManage];
                     </div>
                     <form id="addItemForm">
                         <div class="mb-3">
-                            <label for="item_name" class="form-label"><?php echo $currentLevelName; ?> Name</label>
+                            <label for="item_name" class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> Name</label>
                             <input type="text" class="form-control" id="item_name" required>
                         </div>
-                        <?php if ($canManage === 'localbody'): ?>
+                        <?php if ($canManage === 'localbody_admin'): ?>
                             <div class="mb-3">
                                 <label for="item_type" class="form-label">Type</label>
                                 <select class="form-select" id="item_type" required>
@@ -189,11 +238,11 @@ $currentLevelName = $levelNames[$canManage];
                             <label for="item_target" class="form-label">Target Amount</label>
                             <input type="number" class="form-control" id="item_target" required>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveItemBtn">Save</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveItemBtn">Save</button>
                 </div>
             </div>
         </div>
@@ -204,7 +253,7 @@ $currentLevelName = $levelNames[$canManage];
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit <?php echo $currentLevelName; ?></h5>
+                    <h5 class="modal-title">Edit <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -216,18 +265,18 @@ $currentLevelName = $levelNames[$canManage];
                     <form id="editItemForm">
                         <input type="hidden" id="edit_item_id">
                         <div class="mb-3">
-                            <label for="edit_item_name" class="form-label"><?php echo $currentLevelName; ?> Name</label>
+                            <label for="edit_item_name" class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> Name</label>
                             <input type="text" class="form-control" id="edit_item_name" required>
                         </div>
                         <div class="mb-3">
                             <label for="edit_item_target" class="form-label">Target Amount</label>
                             <input type="number" class="form-control" id="edit_item_target" required>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="updateItemBtn">Update</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="updateItemBtn">Update</button>
                 </div>
             </div>
         </div>
@@ -252,15 +301,15 @@ $currentLevelName = $levelNames[$canManage];
             }
 
             // Add Item  
-            $('#saveItemBtn').click(function() {
+            $('#addItemForm').submit(function() {
                 const name = $('#item_name').val();
                 const target = $('#item_target').val();
-                const $btn = $(this);
+                const $btn = $("#saveItemBtn");
 
                 // Get type if it's a local body  
-                const type = currentLevel === 'localbody' ? $('#item_type').val() : null;
+                const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
 
-                if (!name || !target || (currentLevel === 'localbody' && !type)) {
+                if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
                     alert('Please fill all fields');
                     return;
                 }
@@ -276,7 +325,7 @@ $currentLevelName = $levelNames[$canManage];
                     table: managementTable
                 };
                 // Add type if it's a local body  
-                if (currentLevel === 'localbody') {
+                if (currentLevel === 'localbody_admin') {
                     data.type = type;
                 }
                 <?php if ($parentField): ?>
@@ -324,11 +373,11 @@ $currentLevelName = $levelNames[$canManage];
             });
 
             // Update Item  
-            $('#updateItemBtn').click(function() {
+            $('#editItemForm').submit(function() {
                 const id = $('#edit_item_id').val();
                 const name = $('#edit_item_name').val();
                 const target = $('#edit_item_target').val();
-                const $btn = $(this);
+                const $btn = $('#updateItemBtn');
 
                 if (!id || !name || !target) {
                     alert('Please fill all fields');

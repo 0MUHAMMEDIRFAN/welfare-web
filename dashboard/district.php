@@ -90,7 +90,7 @@ try {
         <div class="header">
             <p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?>
                 (<?php echo htmlspecialchars($district['name']); ?> District)</p>
-            <p> <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Mandalams</a><span class="gap"></span>
+            <p> <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a><span class="gap"></span>
                 <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>
