@@ -68,7 +68,7 @@ if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUser
 
 $currentLevel = $adminHierarchy[$currentUserRole];
 $canManage = $adminHierarchy[$currentUserRole]['manages'][array_search($managingRole, $currentLevel['manages'])];
-$managementTable = $adminHierarchy[$currentUserRole]['table'][array_search($managingRole,$currentLevel['manages'])];
+$managementTable = $adminHierarchy[$currentUserRole]['table'][array_search($managingRole, $currentLevel['manages'])];
 $parentField = $adminHierarchy[$currentUserRole]['parent_field'][array_search($managingRole, $currentLevel['manages'])];
 $parentFieldName = $adminHierarchy[$currentUserRole]['parent_field_name'][array_search($managingRole, $currentLevel['manages'])];
 
@@ -340,7 +340,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                     data: data,
                     success: function(response) {
                         if (response.success) {
-                            location.reload();
+                            location.href = '?type=<?php echo $managingRole; ?>';
                         } else {
                             alert('Error: ' + (response.message || 'Unknown error'));
                         }
@@ -379,6 +379,19 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                 const target = $('#edit_item_target').val();
                 const $btn = $('#updateItemBtn');
 
+                const data = {
+                    action: 'update',
+                    id: id,
+                    name: name,
+                    target_amount: target,
+                    level: currentLevel,
+                    table: managementTable
+                }
+                <?php if ($parentField): ?>
+                    data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                    data.parent_field = '<?php echo $parentField; ?>';
+                <?php endif; ?>
+
                 if (!id || !name || !target) {
                     alert('Please fill all fields');
                     return;
@@ -391,17 +404,10 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                     url: 'ajax/ajax_manage_structure.php',
                     method: 'POST',
                     dataType: 'json',
-                    data: {
-                        action: 'update',
-                        id: id,
-                        name: name,
-                        target_amount: target,
-                        level: currentLevel,
-                        table: managementTable
-                    },
+                    data,
                     success: function(response) {
                         if (response.success) {
-                            location.reload();
+                            location.href = '?type=<?php echo $managingRole; ?>';
                         } else {
                             alert('Error: ' + (response.message || 'Unknown error'));
                         }
@@ -427,21 +433,31 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                     const id = $(this).data('id');
                     const $btn = $(this);
 
+                    const data = {
+                        action: 'delete',
+                        id: id,
+                        level: currentLevel,
+                        table: managementTable
+                    }
+
+                    data.managing_role = "<?php echo $managingRole; ?>"
+
+
+                    // <?php if ($parentField): ?>
+                    //     data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                    //     data.parent_field = '<?php echo $parentField; ?>';
+                    // <?php endif; ?>
+
                     $btn.prop('disabled', true);
 
                     $.ajax({
                         url: 'ajax/ajax_manage_structure.php',
                         method: 'POST',
                         dataType: 'json',
-                        data: {
-                            action: 'delete',
-                            id: id,
-                            level: currentLevel,
-                            table: managementTable
-                        },
+                        data,
                         success: function(response) {
                             if (response.success) {
-                                location.reload();
+                                location.href = '?type=<?php echo $managingRole; ?>';
                             } else {
                                 alert('Error: ' + (response.message || 'Unknown error'));
                             }

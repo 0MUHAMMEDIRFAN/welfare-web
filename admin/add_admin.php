@@ -62,7 +62,7 @@ if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUser
 }
 
 // Check if we're editing  
-$isEditing = isset($_GET['edit']) && isset($_GET['place_id']);
+$isEditing = isset($_GET['edit']) && isset($_GET['place_id']) && isset($_GET['admin_id']);
 $adminData = null;
 $placeData = null;
 
@@ -95,9 +95,11 @@ if (isset($_GET['place_id'])) {
 
         // If editing, get admin data  
         if ($isEditing) {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE {$singularTableName}_id = ? AND role = ? ");
-            $stmt->execute([$_GET['place_id'], $managingRole]);
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? ");
+            $stmt->execute([$_GET['admin_id']]);
             $adminData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // echo "<script>console.log(" . json_encode($adminData) . ");</script>";
 
             if (!$adminData) {
                 die("Admin not found");

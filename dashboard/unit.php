@@ -18,7 +18,8 @@ try {
             u.name as unit_name,  
             l.name as localbody_name,  
             m.name as mandalam_name,  
-            d.name as district_name  
+            d.name as district_name,
+            u.target_amount as unit_target_amount
         FROM units u  
         JOIN localbodies l ON u.localbody_id = l.id  
         JOIN mandalams m ON l.mandalam_id = m.id  
@@ -57,11 +58,15 @@ try {
 
     // Calculate totals  
     $totalCollected = 0;
-    $totalTarget = 0;
+    $totalTarget = $location['unit_target_amount'];
     $totalDonations = 0;
 
+    echo "<script>console.log(" . json_encode($summary) . ");</script>";
+    echo "<script>console.log(" . json_encode($location) . ");</script>";
+    echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
+
+
     foreach ($summary as $row) {
-        // $totalTarget += $row['target_amount'];
         $totalCollected += $row['collected_amount'];
         $totalDonations += $row['donation_count'];
     }

@@ -113,14 +113,14 @@ try {
               LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
                                AND u.role = ? ";
 
-    if ($currentLevel['parent_field']) {
+    if ($currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])]) {
         $query .= " WHERE p.{$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
     }
 
     $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
     $params = [$managingRole];
-    if ($currentLevel['parent_field']) {
+    if ($currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])]) {
         $params[] = $_SESSION['user_level_id'];
     }
 
@@ -205,6 +205,7 @@ try {
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</th>
                                 <th>Admin Name</th>
                                 <th>Phone</th>
@@ -220,6 +221,7 @@ try {
                             <?php else: ?>
                                 <?php foreach ($places as $place): ?>
                                     <tr>
+                                        <td><?php echo htmlspecialchars($place['admin_id']); ?></td>
                                         <td><?php echo htmlspecialchars($place['name']); ?></td>
                                         <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
                                         <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
@@ -248,8 +250,7 @@ try {
                                                             <i class="fas fa-<?php echo $place['is_active'] ? 'ban' : 'check'; ?>"></i>
                                                         </button>
                                                     </form>
-                                                    <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>&edit=1"
-                                                        class="btn btn-primary btn-sm">
+                                                    <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>&edit=1&admin_id=<?php echo $place['admin_id']; ?>" class="btn btn-primary btn-sm">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                 <?php else: ?>

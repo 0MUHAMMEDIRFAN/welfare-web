@@ -86,34 +86,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $target = $_POST['target_amount'] ?? 0;
 
                 // Verify ownership if not state admin  
-                if ($_SESSION['role'] !== 'state_admin') {
-                    $parent_field = null;
-                    switch ($_SESSION['role']) {
-                        case 'district_admin':
-                            $parent_field = 'district_id';
-                            break;
-                        case 'mandalam_admin':
-                            $parent_field = 'mandalam_id';
-                            break;
-                        case 'localbody_admin':
-                            $parent_field = 'localbody_id';
-                            break;
-                    }
+                // if ($_SESSION['role'] !== 'state_admin') {
+                //     $parent_field = null;
+                //     switch ($_SESSION['role']) {
+                //         case 'district_admin':
+                //             $parent_field = 'district_id';
+                //             break;
+                //         case 'mandalam_admin':
+                //             $parent_field = 'mandalam_id';
+                //             break;
+                //         case 'localbody_admin':
+                //             $parent_field = 'localbody_id';
+                //             break;
+                //     }
 
-                    if ($parent_field) {
-                        $verify_query = "SELECT id FROM $table WHERE id = :id AND $parent_field = :parent_id";
-                        $verify_stmt = $pdo->prepare($verify_query);
-                        $verify_stmt->execute([
-                            ':id' => $id,
-                            ':parent_id' => $_SESSION['user_level_id']
-                        ]);
+                //     if ($parent_field) {
+                //         $verify_query = "SELECT id FROM $table WHERE id = :id AND $parent_field = :parent_id";
+                //         $verify_stmt = $pdo->prepare($verify_query);
+                //         $verify_stmt->execute([
+                //             ':id' => $id,
+                //             ':parent_id' => $_SESSION['user_level_id']
+                //         ]);
 
-                        if (!$verify_stmt->fetch()) {
-                            http_response_code(403);
-                            exit(json_encode(['success' => false, 'message' => 'Unauthorized access to this item']));
-                        }
-                    }
-                }
+                //         if (!$verify_stmt->fetch()) {
+                //             http_response_code(403);
+                //             exit(json_encode(['success' => false, 'message' => 'Unauthorized access to this item']));
+                //         }
+                //     }
+                // }
 
                 $query = "UPDATE $table SET name = :name, target_amount = :target WHERE id = :id";
                 $stmt = $pdo->prepare($query);
@@ -134,50 +134,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'] ?? '';
 
                 // Verify ownership and check for child records  
-                if ($_SESSION['role'] !== 'state_admin') {
-                    $parent_field = null;
-                    $child_table = null;
-                    switch ($_SESSION['role']) {
-                        case 'district_admin':
-                            $parent_field = 'district_id';
-                            $child_table = 'mandalams';
-                            break;
-                        case 'mandalam_admin':
-                            $parent_field = 'mandalam_id';
-                            $child_table = 'localbodies';
-                            break;
-                        case 'localbody_admin':
-                            $parent_field = 'localbody_id';
-                            $child_table = 'units';
-                            break;
-                    }
+                // $parent_id = $_POST['parent_id'] ?? null;
+                $parent_field = null;
+                $managingRole = $_POST['managing_role'] ?? null;
+                $child_table = null;
 
-                    if ($parent_field) {
-                        // Verify ownership  
-                        $verify_query = "SELECT id FROM $table WHERE id = :id AND $parent_field = :parent_id";
-                        $verify_stmt = $pdo->prepare($verify_query);
-                        $verify_stmt->execute([
-                            ':id' => $id,
-                            ':parent_id' => $_SESSION['user_level_id']
-                        ]);
+                // if ($_SESSION['role'] !== 'state_admin') {
 
-                        if (!$verify_stmt->fetch()) {
-                            http_response_code(403);
-                            exit(json_encode(['success' => false, 'message' => 'Unauthorized access to this item']));
-                        }
-                    }
+                // if ($parent_field) {
+                //     // Verify ownership  
+                //     $verify_query = "SELECT id FROM $table WHERE id = :id AND $parent_field = :parent_id";
+                //     $verify_stmt = $pdo->prepare($verify_query);
+                //     $verify_stmt->execute([
+                //         ':id' => $id,
+                //         ':parent_id' => $_SESSION['user_level_id']
+                //     ]);
 
-                    // Check for child records if applicable  
-                    if ($child_table) {
-                        $check_query = "SELECT COUNT(*) FROM $child_table WHERE $parent_field = :id";
-                        $check_stmt = $pdo->prepare($check_query);
-                        $check_stmt->execute([':id' => $id]);
-                        if ($check_stmt->fetchColumn() > 0) {
-                            exit(json_encode([
-                                'success' => false,
-                                'message' => 'Cannot delete: This item has dependent records'
-                            ]));
-                        }
+                //     if (!$verify_stmt->fetch()) {
+                //         http_response_code(403);
+                //         exit(json_encode(['success' => false, 'message' => 'Unauthorized access to this item']));
+                //     }
+                // }
+
+                // }
+
+                // Check for child records if applicable  
+                switch ($managingRole) {
+                    case 'district_admin':
+                        $parent_field = 'district_id';
+                        $child_table = 'mandalams';
+                        break;
+                    case 'mandalam_admin':
+                        $parent_field = 'mandalam_id';
+                        $child_table = 'localbodies';
+                        break;
+                    case 'localbody_admin':
+                        $parent_field = 'localbody_id';
+                        $child_table = 'units';
+                        break;
+                    default:
+                        break;
+                }
+
+                if ($child_table && $parent_field) {
+                    $check_query = "SELECT COUNT(*) FROM $child_table WHERE $parent_field = :id";
+                    $check_stmt = $pdo->prepare($check_query);
+                    $check_stmt->execute([':id' => $id]);
+                    if ($check_stmt->fetchColumn() > 0) {
+                        exit(json_encode([
+                            'success' => false,
+                            'message' => 'Cannot delete: This item has dependent records'
+                        ]));
                     }
                 }
 
