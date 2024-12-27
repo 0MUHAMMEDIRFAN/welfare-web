@@ -1,8 +1,16 @@
 <?php
 // $host = 'https://welfarefunds.d4media.in';  
+// $host = 'localhost';  
 // $dbname = 'welfarefunds_partyfunds';  
 // $username = 'welfarefunds_partyuser';  
 // $password = 'welfare@123';
+
+// $host = 'partyfunds.d4media.in:3306';  
+// $host = 'server.d4media.in:3306';  
+// $dbname = 'partyfundsd4medi_partyfunds';  
+// $username = 'partyfundsd4medi_prty_user';  
+// $password = '-m%X4oVrE!kk';  
+
 $host = 'localhost';  
 $dbname = 'partyfunds';  
 $username = 'root';  

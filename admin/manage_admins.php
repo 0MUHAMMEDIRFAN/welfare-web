@@ -101,7 +101,9 @@ if (isset($_POST['toggle_status'])) {
 // Get places with their admins  
 try {
     $currentLevel = $adminHierarchy[$currentUserRole];
-    $singularTableName = getSingularForm($currentLevel['table'][array_search($managingRole, $currentLevel['manages'])]);
+    $currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
+    $singularTableName = getSingularForm($currentTable);
+    $parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
 
     $query = "SELECT p.*,   
                      u.id as admin_id,   
@@ -109,18 +111,18 @@ try {
                      u.phone as admin_phone,   
                      u.is_active,  
                      u.created_at as admin_created_at  
-              FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} p
+              FROM {$currentTable} p
               LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
                                AND u.role = ? ";
 
-    if ($currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])]) {
-        $query .= " WHERE p.{$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
+    if ($parentField) {
+        $query .= " WHERE p.{$parentField} = ?";
     }
 
     $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
     $params = [$managingRole];
-    if ($currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])]) {
+    if ($parentField) {
         $params[] = $_SESSION['user_level_id'];
     }
 
@@ -206,8 +208,8 @@ try {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</th>
                                 <th>Admin Name</th>
+                                <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</th>
                                 <th>Phone</th>
                                 <th>Status</th>
                                 <th class="text-end">Actions</th>
@@ -222,8 +224,8 @@ try {
                                 <?php foreach ($places as $place): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($place['admin_id']); ?></td>
-                                        <td><?php echo htmlspecialchars($place['name']); ?></td>
                                         <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
+                                        <td><?php echo htmlspecialchars($place['name']); ?></td>
                                         <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
                                         <td>
                                             <?php if ($place['admin_id']): ?>

@@ -68,17 +68,18 @@ $placeData = null;
 
 // Get current level configuration  
 $currentLevel = $adminHierarchy[$currentUserRole];
-$singularTableName = getSingularForm($currentLevel['table'][array_search($managingRole, $currentLevel['manages'])]);
-
+$parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
+$currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
+$singularTableName = getSingularForm($currentTable);
 // Validate place_id  
 
 if (isset($_GET['place_id'])) {
     try {
-        $query = "SELECT * FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} WHERE id = ?";
+        $query = "SELECT * FROM {$currentTable} WHERE id = ?";
         $params = [$_GET['place_id']];
 
-        if ($currentLevel['parent_field']) {
-            $query .= " AND {$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
+        if ($parentField) {
+            $query .= " AND {$parentField} = ?";
             $params[] = $_SESSION['user_level_id'];
         }
 
@@ -86,7 +87,7 @@ if (isset($_GET['place_id'])) {
         $stmt->execute($params);
         $placeData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // echo "<script>console.log('PHP Variable: " . json_encode($placeData) . "');</script>";
+        echo "<script>console.log('PHP Variable: '" . json_encode($placeData) . ");</script>";
         // echo "<script>console.log('PHP Variable: " . addslashes($) . "');</script>";
 
         if (!$placeData) {
@@ -270,9 +271,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <select name="place_id" class="form-control" required>
                                     <option value="">Select <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></option>
                                     <?php
-                                    $query = "SELECT id, name FROM {$currentLevel['table'][array_search($managingRole,$currentLevel['manages'])]} WHERE 1";
-                                    if ($currentLevel['parent_field']) {
-                                        $query .= " AND {$currentLevel['parent_field'][array_search($managingRole,$currentLevel['manages'])]} = ?";
+                                    $query = "SELECT id, name FROM {$currentTable} WHERE 1";
+                                    if ($parentField) {
+                                        $query .= " AND {$parentField} = ?";
                                         $stmt = $pdo->prepare($query);
                                         $stmt->execute([$_SESSION['user_level_id']]);
                                     } else {

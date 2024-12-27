@@ -22,9 +22,7 @@ function login($phone, $mpin, $pdo)
     //     $stmt->execute([$mandalam_id]);
     //     $location = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user
-        // && password_verify($mpin, $user['mpin'])
-    ) {
+    if ($user && password_verify($mpin, $user['mpin'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['name'] = $user['name'];
