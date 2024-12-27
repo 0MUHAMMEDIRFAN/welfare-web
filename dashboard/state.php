@@ -116,6 +116,7 @@ foreach ($summary as $row) {
             <table>
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>District</th>
                         <th>Target Amount</th>
                         <th>Collected Amount</th>
@@ -127,6 +128,7 @@ foreach ($summary as $row) {
                 <tbody>
                     <?php foreach ($summary as $row): ?>
                         <tr>
+                            <td><?php echo htmlspecialchars($row['id']); ?></td>
                             <td><?php echo htmlspecialchars($row['name']); ?></td>
                             <td>
                                 ₹<?php echo number_format($row['target_amount'], 2); ?>
@@ -270,11 +272,11 @@ foreach ($summary as $row) {
                             <label for="target_amount" class="form-label">Target Amount</label>
                             <input type="number" class="form-control" id="target_amount" required>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
                 </div>
             </div>
         </div>
@@ -297,7 +299,7 @@ foreach ($summary as $row) {
             });
 
             // Save target amount  
-            $('#saveTargetBtn').click(function() {
+            $('#editTargetForm').submit(function() {
                 const entityId = $('#entity_id').val();
                 const targetAmount = $('#target_amount').val();
 

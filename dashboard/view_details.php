@@ -197,7 +197,7 @@ try {
                             <?php else: ?>  
                                 <th>Name</th>  
                                 <th>Total Collections</th>  
-                                <th>Total Amount</th>  
+                                <th>Total Collected</th>  
                                 <th>Actions</th>  
                             <?php endif; ?>  
                         </tr>  
