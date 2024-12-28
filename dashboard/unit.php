@@ -142,23 +142,29 @@ try {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($summary as $row): ?>
+                    <?php if (empty($summary)): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['name']); ?></td>
-                            <td><?php echo htmlspecialchars($row['phone']); ?></td>
-                            <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                            <td><?php echo number_format($row['donation_count']); ?></td>
-                            <td>
-                                <span class="status-badge <?php echo $row['is_active'] == 1 ? 'active' : 'inactive'; ?>">
-                                    <?php echo $row['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
-                                </span>
-                            </td>
-                            <td>
-                                <a href="view_details.php?level=unit&id=<?php echo $unit_id; ?>&colid=<?php echo $row['id']; ?>"
-                                    class="btn btn-view">View Details</a>
-                            </td>
+                            <td colspan="12" class="text-center">No records found</td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($summary as $row): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['phone']); ?></td>
+                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
+                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td>
+                                    <span class="status-badge <?php echo $row['is_active'] == 1 ? 'active' : 'inactive'; ?>">
+                                        <?php echo $row['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="view_details.php?level=unit&id=<?php echo $unit_id; ?>&colid=<?php echo $row['id']; ?>"
+                                        class="btn btn-view">View Details</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

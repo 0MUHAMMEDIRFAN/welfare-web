@@ -7,12 +7,12 @@
 
 // $host = 'partyfunds.d4media.in:3306';  
 // $host = 'server.d4media.in:3306';  
-// $dbname = 'partyfundsd4medi_partyfunds';  
+$dbname = 'partyfundsd4medi_partyfunds';  
 // $username = 'partyfundsd4medi_prty_user';  
 // $password = '-m%X4oVrE!kk';  
 
 $host = 'localhost';  
-$dbname = 'partyfunds';  
+// $dbname = 'partyfunds';  
 $username = 'root';  
 $password = '';  
 

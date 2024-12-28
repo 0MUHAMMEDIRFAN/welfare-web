@@ -134,33 +134,39 @@ try {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($summary as $row): ?>
+                    <?php if (empty($summary)): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['name']); ?></td>
-                            <td>
-                                ₹<?php echo number_format($row['target_amount'], 2); ?>
-                                <button class="btn btn-sm btn-warning edit-target"
-                                    data-id="<?php echo $row['id']; ?>"
-                                    data-target="<?php echo $row['target_amount']; ?>">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                            <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                            <td>
-                                <?php
-                                $percentage = $row['target_amount'] > 0
-                                    ? ($row['collected_amount'] / $row['target_amount']) * 100
-                                    : 0;
-                                echo number_format($percentage, 2) . '%';
-                                ?>
-                            </td>
-                            <td><?php echo number_format($row['donation_count']); ?></td>
-                            <td>
-                                <a href="view_details.php?level=unit&id=<?php echo $row['id']; ?>"
-                                    class="btn btn-view">View Details</a>
-                            </td>
+                            <td colspan="12" class="text-center">No records found</td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($summary as $row): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                <td>
+                                    ₹<?php echo number_format($row['target_amount'], 2); ?>
+                                    <button class="btn btn-sm btn-warning edit-target"
+                                        data-id="<?php echo $row['id']; ?>"
+                                        data-target="<?php echo $row['target_amount']; ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
+                                <td>
+                                    <?php
+                                    $percentage = $row['target_amount'] > 0
+                                        ? ($row['collected_amount'] / $row['target_amount']) * 100
+                                        : 0;
+                                    echo number_format($percentage, 2) . '%';
+                                    ?>
+                                </td>
+                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td>
+                                    <a href="view_details.php?level=unit&id=<?php echo $row['id']; ?>"
+                                        class="btn btn-view">View Details</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

@@ -131,38 +131,68 @@ WHERE l.mandalam_id = ?";
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($summary as $row): ?>
+                    <?php if (empty($summary)): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['name']); ?></td>
-                            <td>
-                                ₹<?php echo number_format($row['target_amount'], 2); ?>
-                                <button class="btn btn-sm btn-warning edit-target"
-                                    data-id="<?php echo $row['id']; ?>"
-                                    data-target="<?php echo $row['target_amount']; ?>">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                            <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                            <td>
-                                <?php
-                                $percentage = $row['target_amount'] > 0
-                                    ? ($row['collected_amount'] / $row['target_amount']) * 100
-                                    : 0;
-                                echo number_format($percentage, 2) . '%';
-                                ?>
-                            </td>
-                            <td><?php echo number_format($row['donation_count']); ?></td>
-                            <td>
-                                <a href="view_details.php?level=localbody&id=<?php echo $row['id']; ?>"
-                                    class="btn btn-view">View Details</a>
-                            </td>
+                            <td colspan="12" class="text-center">No records found</td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($summary as $row): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                <td>
+                                    ₹<?php echo number_format($row['target_amount'], 2); ?>
+                                    <button class="btn btn-sm btn-warning edit-target"
+                                        data-id="<?php echo $row['id']; ?>"
+                                        data-target="<?php echo $row['target_amount']; ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
+                                <td>
+                                    <?php
+                                    $percentage = $row['target_amount'] > 0
+                                        ? ($row['collected_amount'] / $row['target_amount']) * 100
+                                        : 0;
+                                    echo number_format($percentage, 2) . '%';
+                                    ?>
+                                </td>
+                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td>
+                                    <a href="view_details.php?level=localbody&id=<?php echo $row['id']; ?>"
+                                        class="btn btn-view">View Details</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
 
+    <!-- Target Amount Edit Modal -->
+    <div class="modal fade" id="editTargetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Target Amount</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTargetForm">
+                        <input type="hidden" id="entity_id">
+                        <div class="mb-3">
+                            <label for="target_amount" class="form-label">Target Amount</label>
+                            <input type="number" class="form-control" id="target_amount" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <style>
         .dashboard {
             max-width: 1200px;
@@ -262,30 +292,6 @@ WHERE l.mandalam_id = ?";
             font-weight: 600;
         }
     </style>
-    <!-- Target Amount Edit Modal -->
-    <div class="modal fade" id="editTargetModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Target Amount</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editTargetForm">
-                        <input type="hidden" id="entity_id">
-                        <div class="mb-3">
-                            <label for="target_amount" class="form-label">Target Amount</label>
-                            <input type="number" class="form-control" id="target_amount" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- Add Bootstrap JS and jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

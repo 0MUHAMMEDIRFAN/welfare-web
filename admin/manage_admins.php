@@ -209,7 +209,7 @@ try {
                             <tr>
                                 <th>ID</th>
                                 <th>Admin Name</th>
-                                <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</th>
+                                <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></th>
                                 <th>Phone</th>
                                 <th>Status</th>
                                 <th class="text-end">Actions</th>
@@ -218,7 +218,7 @@ try {
                         <tbody>
                             <?php if (empty($places)): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center">No records found</td>
+                                    <td colspan="12" class="text-center">No records found</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($places as $place): ?>

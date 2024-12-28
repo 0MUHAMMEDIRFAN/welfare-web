@@ -24,28 +24,28 @@ $adminHierarchy = [
         'table' => ['districts', "mandalams", "localbodies", "units"],
         'name_field' => 'name',
         'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id"],
-        'parent_field_name' => [null, 'districts', "mandalams", "localbodies"]
+        'parent_field_table' => [null, 'districts', "mandalams", "localbodies"]
     ],
     'district_admin' => [
         'manages' => ['mandalam_admin', "localbody_admin", "unit_admin"],
         'table' => ["mandalams", "localbodies", "units"],
         'name_field' => 'name',
         'parent_field' => ['district_id', "mandalam_id", "localbody_id"],
-        'parent_field_name' => ['districts', "mandalams", "localbodies"]
+        'parent_field_table' => ['districts', "mandalams", "localbodies"]
     ],
     'mandalam_admin' => [
         'manages' => ["localbody_admin", "unit_admin"],
         'table' => ["localbodies", "units"],
         'name_field' => 'name',
         'parent_field' => ["mandalam_id", "localbody_id"],
-        'parent_field_name' => ["mandalams", "localbodies"]
+        'parent_field_table' => ["mandalams", "localbodies"]
     ],
     'localbody_admin' => [
         'manages' => ["unit_admin"],
         'table' => ['units'],
         'name_field' => 'name',
         'parent_field' => ['localbody_id'],
-        'parent_field_name' => ["localbodies"]
+        'parent_field_table' => ["localbodies"]
     ]
 ];
 
@@ -70,16 +70,25 @@ $currentLevel = $adminHierarchy[$currentUserRole];
 $canManage = $adminHierarchy[$currentUserRole]['manages'][array_search($managingRole, $currentLevel['manages'])];
 $managementTable = $adminHierarchy[$currentUserRole]['table'][array_search($managingRole, $currentLevel['manages'])];
 $parentField = $adminHierarchy[$currentUserRole]['parent_field'][array_search($managingRole, $currentLevel['manages'])];
-$parentFieldName = $adminHierarchy[$currentUserRole]['parent_field_name'][array_search($managingRole, $currentLevel['manages'])];
+$parentFieldTable = $adminHierarchy[$currentUserRole]['parent_field_table'][array_search($managingRole, $currentLevel['manages'])];
+$mainField = $adminHierarchy[$currentUserRole]['parent_field'][0];
+$mainFieldTable = $adminHierarchy[$currentUserRole]['parent_field_table'][0];
 
 // Get items to manage based on admin level  
 try {
     if ($parentField) {
-        $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
-              LEFT JOIN {$parentFieldName} p ON t.$parentField = p.id 
-              WHERE t.$parentField = :parent_id ORDER BY t.id";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute([':parent_id' => $_SESSION['user_level_id']]);
+        if (!$mainField) {
+            $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
+                  LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id ORDER BY t.id";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+        } else {
+            $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
+              LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
+              WHERE t.$mainField = :parent_id ORDER BY t.id";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([':parent_id' => $_SESSION['user_level_id']]);
+        }
     } else {
         $query = "SELECT * FROM {$managementTable} ORDER BY id";
         $stmt = $pdo->prepare($query);
@@ -161,42 +170,52 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                             <tr>
                                 <th>ID</th>
                                 <th>Name</th>
-                                <?php if ($parentFieldName): ?>
-                                    <th><?php echo ucfirst(getSingularForm($parentFieldName)); ?></th>
+                                <?php if ($parentFieldTable): ?>
+                                    <th><?php echo ucfirst(getSingularForm($parentFieldTable)); ?></th>
                                 <?php endif; ?>
                                 <?php if ($canManage === 'localbody_admin'): ?>
                                     <th>Type</th>
                                 <?php endif; ?>
                                 <th>Target Amount</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($items as $item): ?>
-                                <tr data-item="<?php echo $item['id']; ?>">
-                                    <td><?php echo htmlspecialchars($item['id']); ?></td>
-                                    <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                    <?php if ($parentFieldName): ?>
-                                        <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
-                                    <?php endif; ?>
-                                    <?php if ($canManage === 'localbody_admin'): ?>
-                                        <td><?php echo htmlspecialchars($item['type']); ?></td>
-                                    <?php endif; ?>
-                                    <td class="target-amount">₹<?php echo number_format($item['target_amount'], 2); ?></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-warning edit-item"
-                                            data-id="<?php echo $item['id']; ?>"
-                                            data-name="<?php echo htmlspecialchars($item['name']); ?>"
-                                            data-target="<?php echo $item['target_amount']; ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger delete-item"
-                                            data-id="<?php echo $item['id']; ?>">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
+                            <?php if (empty($items)): ?>
+                                <tr>
+                                    <td colspan="12" class="text-center">No records found</td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($items as $item): ?>
+                                    <tr data-item="<?php echo $item['id']; ?>">
+                                        <td><?php echo htmlspecialchars($item['id']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['name']); ?></td>
+                                        <?php if ($parentFieldTable): ?>
+                                            <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
+                                        <?php endif; ?>
+                                        <?php if ($canManage === 'localbody_admin'): ?>
+                                            <td><?php echo htmlspecialchars($item['type']); ?></td>
+                                        <?php endif; ?>
+                                        <td class="target-amount">₹<?php echo number_format($item['target_amount'], 2); ?></td>
+                                        <td><?php echo htmlspecialchars($item['created_at']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['updated_at']); ?></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning edit-item"
+                                                data-id="<?php echo $item['id']; ?>"
+                                                data-name="<?php echo htmlspecialchars($item['name']); ?>"
+                                                data-target="<?php echo $item['target_amount']; ?>">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger delete-item"
+                                                data-id="<?php echo $item['id']; ?>">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -227,7 +246,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                             <div class="mb-3">
                                 <label for="item_type" class="form-label">Type</label>
                                 <select class="form-select" id="item_type" required>
-                                    <option value="">Select Type</option>
+                                    <option value="" hidden>Select Type</option>
                                     <option value="PANCHAYATH">Panchayath</option>
                                     <option value="MUNCIPALITY">Muncipality</option>
                                     <option value="CORPORATION">Corporation</option>
