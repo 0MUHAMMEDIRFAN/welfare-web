@@ -47,22 +47,31 @@ $adminHierarchy = [
 ];
 
 $currentUserRole = $_SESSION['role'];
-if (!isset($adminHierarchy[$currentUserRole])) {
+$currentLevel = $adminHierarchy[$currentUserRole];
+
+if (!isset($currentLevel)) {
     die("Unauthorized access");
 }
 
 // Get the level being managed  
 $managingRole = '';
-if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUserRole]['manages'])) {
+if (isset($_GET['type']) && in_array($_GET['type'], $currentLevel['manages'])) {
     $managingRole = $_GET['type'];
 } else {
-    header("Location: ?type=" . $adminHierarchy[$currentUserRole]['manages'][0]);
+    header("Location: ?type=" . $currentLevel['manages'][0]);
     exit();
 }
+
+$currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
+// $parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
+$mainField = $currentLevel['parent_field'][0];
+$singularTableName = getSingularForm($currentTable);
+
+
 // if ($currentUserRole === 'localbody_admin') {
 //     // $managingRole = isset($_GET['type']) && $_GET['type'] === 'collector' ? 'collector' : 'unit_admin';
 // } else {
-//     $managingRole = $adminHierarchy[$currentUserRole]['manages'];
+//     $managingRole = $currentLevel['manages'];
 // }
 
 // Handle MPIN update  
@@ -100,11 +109,6 @@ if (isset($_POST['toggle_status'])) {
 
 // Get places with their admins  
 try {
-    $currentLevel = $adminHierarchy[$currentUserRole];
-    $currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
-    $singularTableName = getSingularForm($currentTable);
-    $parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
-
     $query = "SELECT p.*,   
                      u.id as admin_id,   
                      u.name as admin_name,   
@@ -115,14 +119,14 @@ try {
               LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
                                AND u.role = ? ";
 
-    if ($parentField) {
-        $query .= " WHERE p.{$parentField} = ?";
+    if ($mainField) {
+        $query .= " WHERE p.{$mainField} = ?";
     }
 
     $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
     $params = [$managingRole];
-    if ($parentField) {
+    if ($mainField) {
         $params[] = $_SESSION['user_level_id'];
     }
 
@@ -183,9 +187,9 @@ try {
             <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
         <?php endif; ?>
 
-        <?php if (count($adminHierarchy[$currentUserRole]['manages']) > 1): ?>
+        <?php if (count($currentLevel['manages']) > 1): ?>
             <div class="mb-3">
-                <?php foreach ($adminHierarchy[$currentUserRole]['manages'] as $role): ?>
+                <?php foreach ($currentLevel['manages'] as $role): ?>
                     <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
                         <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
                     </a>
@@ -211,8 +215,8 @@ try {
                                 <th>Admin Name</th>
                                 <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></th>
                                 <th>Phone</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
+                                <th class="text-center" style="width: 70px;">Status</th>
+                                <th class="text-end" style="width: 130px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -227,7 +231,7 @@ try {
                                         <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
                                         <td><?php echo htmlspecialchars($place['name']); ?></td>
                                         <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
-                                        <td>
+                                        <td class="text-center" style="width: 40px;">
                                             <?php if ($place['admin_id']): ?>
                                                 <span class="badge <?php echo $place['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
                                                     <?php echo $place['is_active'] ? 'Active' : 'Inactive'; ?>
@@ -236,7 +240,7 @@ try {
                                                 -
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" style="width: 130px;">
                                             <div class="action-buttons">
                                                 <?php if ($place['admin_id']): ?>
                                                     <button onclick="showMpinModal(<?php echo $place['admin_id']; ?>)"

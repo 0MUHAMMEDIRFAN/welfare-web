@@ -51,46 +51,47 @@ $adminHierarchy = [
 
 // Get current admin's level and what they can manage  
 $currentUserRole = $_SESSION['role'];
+$currentLevel = $adminHierarchy[$currentUserRole];
 
-if (!isset($adminHierarchy[$currentUserRole])) {
+if (!isset($currentLevel)) {
     header("Location: {$_SESSION['level']}.php");
     exit();
 }
 
+
 // Get the level being managed  
 $managingRole = '';
-if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUserRole]['manages'])) {
+if (isset($_GET['type']) && in_array($_GET['type'], $currentLevel['manages'])) {
     $managingRole = $_GET['type'];
 } else {
-    header("Location: ?type=" . $adminHierarchy[$currentUserRole]['manages'][0]);
+    header("Location: ?type=" . $currentLevel['manages'][0]);
     exit();
 }
 
-$currentLevel = $adminHierarchy[$currentUserRole];
-$canManage = $adminHierarchy[$currentUserRole]['manages'][array_search($managingRole, $currentLevel['manages'])];
-$managementTable = $adminHierarchy[$currentUserRole]['table'][array_search($managingRole, $currentLevel['manages'])];
-$parentField = $adminHierarchy[$currentUserRole]['parent_field'][array_search($managingRole, $currentLevel['manages'])];
-$parentFieldTable = $adminHierarchy[$currentUserRole]['parent_field_table'][array_search($managingRole, $currentLevel['manages'])];
-$mainField = $adminHierarchy[$currentUserRole]['parent_field'][0];
-$mainFieldTable = $adminHierarchy[$currentUserRole]['parent_field_table'][0];
+$canManage = $currentLevel['manages'][array_search($managingRole, $currentLevel['manages'])];
+$currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
+$parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
+$parentFieldTable = $currentLevel['parent_field_table'][array_search($managingRole, $currentLevel['manages'])];
+$mainField = $currentLevel['parent_field'][0];
+$mainFieldTable = $currentLevel['parent_field_table'][0];
 
 // Get items to manage based on admin level  
 try {
     if ($parentField) {
         if (!$mainField) {
-            $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
+            $query = "SELECT t.*, p.name as parent_name FROM {$currentTable} t 
                   LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id ORDER BY t.id";
             $stmt = $pdo->prepare($query);
             $stmt->execute();
         } else {
-            $query = "SELECT t.*, p.name as parent_name FROM {$managementTable} t 
+            $query = "SELECT t.*, p.name as parent_name FROM {$currentTable} t 
               LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
               WHERE t.$mainField = :parent_id ORDER BY t.id";
             $stmt = $pdo->prepare($query);
             $stmt->execute([':parent_id' => $_SESSION['user_level_id']]);
         }
     } else {
-        $query = "SELECT * FROM {$managementTable} ORDER BY id";
+        $query = "SELECT * FROM {$currentTable} ORDER BY id";
         $stmt = $pdo->prepare($query);
         $stmt->execute();
     }
@@ -98,10 +99,6 @@ try {
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
-echo "<script>console.log(" . json_encode($items) . ");</script>";
-echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
-
-
 ?>
 
 <!DOCTYPE html>
@@ -144,9 +141,9 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
     </nav>
 
     <div class="container mt-4">
-        <?php if (count($adminHierarchy[$currentUserRole]['manages']) > 1): ?>
+        <?php if (count($currentLevel['manages']) > 1): ?>
             <div class="mb-3">
-                <?php foreach ($adminHierarchy[$currentUserRole]['manages'] as $role): ?>
+                <?php foreach ($currentLevel['manages'] as $role): ?>
                     <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
                         <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
                     </a>
@@ -307,7 +304,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
     <script>
         $(document).ready(function() {
             const currentLevel = '<?php echo $canManage; ?>';
-            const managementTable = '<?php echo $managementTable; ?>';
+            const currentTable = '<?php echo $currentTable; ?>';
 
             function showLoading(formId, spinnerId) {
                 $(`#${spinnerId}`).removeClass('d-none');
@@ -341,7 +338,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                     name: name,
                     target_amount: target,
                     level: currentLevel,
-                    table: managementTable
+                    table: currentTable
                 };
                 // Add type if it's a local body  
                 if (currentLevel === 'localbody_admin') {
@@ -404,7 +401,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                     name: name,
                     target_amount: target,
                     level: currentLevel,
-                    table: managementTable
+                    table: currentTable
                 }
                 <?php if ($parentField): ?>
                     data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
@@ -456,7 +453,7 @@ echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
                         action: 'delete',
                         id: id,
                         level: currentLevel,
-                        table: managementTable
+                        table: currentTable
                     }
 
                     data.managing_role = "<?php echo $managingRole; ?>"
