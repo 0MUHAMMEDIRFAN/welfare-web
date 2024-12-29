@@ -109,31 +109,39 @@ if (isset($_POST['toggle_status'])) {
 
 // Get places with their admins  
 try {
-    $query = "SELECT p.*,   
-                     u.id as admin_id,   
-                     u.name as admin_name,   
-                     u.phone as admin_phone,   
-                     u.is_active,  
-                     u.created_at as admin_created_at  
-              FROM {$currentTable} p
-              LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
-                               AND u.role = ? ";
-    
-    // $query = "SELECT u.id as admin_id,   
+    // $query = "SELECT p.*,   
+    //                  u.id as admin_id,   
     //                  u.name as admin_name,   
     //                  u.phone as admin_phone,   
     //                  u.is_active,  
     //                  u.created_at as admin_created_at  
-    //                 u.
-    //             FROM users u 
-    //         --   FROM {$currentTable} p
-    //           LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id AND u.role = ? ";
+    //           FROM {$currentTable} p
+    //           LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
+    //                            AND u.role = ? ";
+
+    $query = "SELECT u.id as admin_id,   
+                     u.name as admin_name,   
+                     u.phone as admin_phone,   
+                     u.is_active,  
+                     u.created_at as admin_created_at,  
+                     u.role,
+                     u.district_id,
+                     u.mandalam_id,
+                     u.localbody_id,
+                     u.unit_id,
+                     u.{$singularTableName}_id as id,
+                     p.name as name
+                FROM users u 
+                LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id
+                WHERE u.role = ?";
+    // --   FROM {$currentTable} p
+    //   LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id AND u.role = ? ";
 
     if ($mainField) {
-        $query .= " WHERE p.{$mainField} = ?";
+        $query .= " AND p.{$mainField} = ?";
     }
 
-    $query .= " ORDER BY p.{$currentLevel['name_field']}";
+    // $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
     $params = [$managingRole];
     if ($mainField) {

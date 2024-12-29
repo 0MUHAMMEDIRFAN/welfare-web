@@ -276,7 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 echo '<div class="mb-3">
                                 <label class="form-label">' . $mainName . '</label>
                                 <select name="' . ($i == ($managingRole == 'collector' ? array_search($managingRole, $currentManages) - 1 : array_search($managingRole, $currentManages)) ? "place_id" : "") . '" id="item_' . $mainName . '" class="form-control" required>
-                                    <option value="" hidden>Select ' . $mainName . '</option>';
+                                    <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
                                 if ($isEditing) {
                                     $mainTable = $mainTables[$i];
                                     $mainParentField = $mainParentFields[$i];
@@ -365,6 +365,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // After selecting orgs
             $('#item_District').change(function() {
                 var districtId = $(this).val();
+                $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Select District First</option>');
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Select Mandalam First</option>');
+                $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
                 if (districtId) {
                     $.ajax({
                         url: 'ajax/get_mandalams.php',
@@ -373,24 +376,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             district_id: districtId
                         },
                         success: function(response) {
-                            console.log(response)
                             let mandalams = JSON.parse(response);
                             let options = '<option value="" hidden>Select Mandalam</option>';
-                            mandalams.forEach(function(mandalam) {
-                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                            });
+                            if (mandalams.length) {
+                                mandalams.forEach(function(mandalam) {
+                                    options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                                });
+                            } else {
+                                options += `<option value="" disabled>No Mandalams Under This district</option>`
+                            }
                             $('#item_Mandalam').html(options);
                         }
                     });
                 } else {
-                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Select a valid District</option>');
                 }
             });
 
             $('#item_Mandalam').change(function() {
-                console.log("hi")
                 var mandalamId = $(this).val();
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Select Mandalam First</option>');
+                $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
                 if (mandalamId) {
                     $.ajax({
                         url: 'ajax/get_localbodies.php',
@@ -399,23 +405,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             mandalam_id: mandalamId
                         },
                         success: function(response) {
-                            console.log(response)
                             let localbodies = JSON.parse(response);
                             let options = '<option value="" hidden>Select Localbody</option>';
-                            localbodies.forEach(function(localbody) {
-                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                            });
+                            if (localbodies.length) {
+                                localbodies.forEach(function(localbody) {
+                                    options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                                });
+                            } else {
+                                options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                            }
                             $('#item_Localbody').html(options);
                         }
                     });
                 } else {
-                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Select a valid Mandalam</option>');
                 }
             });
 
             $('#item_Localbody').change(function() {
-                console.log("hi")
                 var localbodyId = $(this).val();
+                $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
                 if (localbodyId) {
                     $.ajax({
                         url: 'ajax/get_units.php',
@@ -424,17 +433,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             localbody_id: localbodyId
                         },
                         success: function(response) {
-                            console.log(response)
                             let units = JSON.parse(response);
                             let options = '<option value="" hidden>Select Unit</option>';
-                            units.forEach(function(unit) {
-                                options += `<option value="${unit.id}">${unit.name}</option>`;
-                            });
+                            if (units.length) {
+                                units.forEach(function(unit) {
+                                    options += `<option value="${unit.id}">${unit.name}</option>`;
+                                });
+                            } else {
+                                options += `<option value="" disabled>No Units Under This Localbody</option>`
+                            }
                             $('#item_Unit').html(options);
                         }
                     });
                 } else {
-                    $('#item_Unit').html('<option value="" hidden>Select Unit</option>');
+                    $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select a valid Localbody</option>');
                 }
             });
         })
