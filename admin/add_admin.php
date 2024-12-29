@@ -48,18 +48,26 @@ $adminHierarchy = [
 ];
 
 $currentUserRole = $_SESSION['role'];
-if (!isset($adminHierarchy[$currentUserRole])) {
+$currentLevel = $adminHierarchy[$currentUserRole];
+$currentManages = $currentLevel['manages'];
+$mainTables = $currentLevel['table'];
+$mainParentFields = $currentLevel['parent_field'];
+if (!isset($currentLevel)) {
     die("Unauthorized access");
 }
 
 // Get the type of admin being managed  
 $managingRole = '';
-if (isset($_GET['type']) && in_array($_GET['type'], $adminHierarchy[$currentUserRole]['manages'])) {
+if (isset($_GET['type']) && in_array($_GET['type'], $currentManages)) {
     $managingRole = $_GET['type'];
 } else {
-    header("Location: ?type=" . $adminHierarchy[$currentUserRole]['manages'][0]);
+    header("Location: ?type=" . $currentManages[0]);
     exit();
 }
+
+$parentField = $mainParentFields[array_search($managingRole, $currentManages)];
+$currentTable = $mainTables[array_search($managingRole, $currentManages)];
+$singularTableName = getSingularForm($currentTable);
 
 // Check if we're editing  
 $isEditing = isset($_GET['edit']) && isset($_GET['place_id']) && isset($_GET['admin_id']);
@@ -67,10 +75,6 @@ $adminData = null;
 $placeData = null;
 
 // Get current level configuration  
-$currentLevel = $adminHierarchy[$currentUserRole];
-$parentField = $currentLevel['parent_field'][array_search($managingRole, $currentLevel['manages'])];
-$currentTable = $currentLevel['table'][array_search($managingRole, $currentLevel['manages'])];
-$singularTableName = getSingularForm($currentTable);
 // Validate place_id  
 
 if (isset($_GET['place_id'])) {
@@ -118,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Validate input  
         if (empty($_POST['name']) || empty($_POST['phone']) || empty($_POST['place_id'])) {
-            throw new Exception("Name and phone are required");
+            throw new Exception("Name, phone and parent_field are required");
         }
 
         if (!preg_match("/^\d{10}$/", $_POST['phone'])) {
@@ -265,15 +269,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="invalid-feedback">Valid 10-digit phone number is required</div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></label>
-                                <!-- <input type="" name="phone" class="form-control" required pattern="\d{10}" -->
-                                <select name="place_id" class="form-control" required>
-                                    <option value="">Select <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></option>
-                                    <?php
-                                    $query = "SELECT id, name FROM {$currentTable} WHERE 1";
-                                    if ($parentField) {
-                                        $query .= " AND {$parentField} = ?";
+                            <?php
+                            $i = 0;
+                            while ($i <= array_search($managingRole, $currentManages)) {
+                                $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
+                                echo '<div class="mb-3">
+                                <label class="form-label">' . $mainName . '</label>
+                                <select name="' . ($i == array_search($managingRole, $currentManages) ? "place_id" : "") . '" id="item_' . $mainName . '" class="form-control" required>
+                                    <option value="" hidden>Select ' . $mainName . '</option>';
+                                if ($i == 0) {
+                                    $mainTable = $mainTables[$i];
+                                    $mainParentField = $mainParentFields[$i];
+                                    // echo '<script>console.log('.addslashes($mainTable).')</script>';
+                                    $query = "SELECT id, name FROM {$mainTable} WHERE 1";
+                                    if ($mainParentField) {
+                                        $query .= " AND {$mainParentField} = ?";
                                         $stmt = $pdo->prepare($query);
                                         $stmt->execute([$_SESSION['user_level_id']]);
                                     } else {
@@ -283,10 +293,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         $selected = $row['id'] == $placeData['id'] ? 'selected' : '';
                                         echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
                                     }
-                                    ?>
-                                </select>
-                                <div class="invalid-feedback"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> is required</div>
-                            </div>
+                                }
+                                echo '</select>
+                                <div class="invalid-feedback">' . $mainName . ' is required</div>
+                            </div>';
+                                $i++;
+                            }
+                            ?>
 
                             <div class="mb-3">
                                 <label class="form-label"><?php echo $isEditing ? 'New MPIN (leave blank to keep current)' : 'MPIN'; ?></label>
@@ -315,21 +328,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
-        // Form validation  
-        (function() {
-            'use strict'
-            var forms = document.querySelectorAll('.needs-validation')
-            Array.prototype.slice.call(forms).forEach(function(form) {
-                form.addEventListener('submit', function(event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
-                    form.classList.add('was-validated')
-                }, false)
-            })
-        })()
+        $(document).ready(function() {
+            // Form validation  
+            (function() {
+                'use strict'
+                var forms = document.querySelectorAll('.needs-validation')
+                Array.prototype.slice.call(forms).forEach(function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+            })()
+            // After selecting orgs
+            $('#item_District').change(function() {
+                var districtId = $(this).val();
+                if (districtId) {
+                    $.ajax({
+                        url: 'ajax/get_mandalams.php',
+                        method: 'GET',
+                        data: {
+                            district_id: districtId
+                        },
+                        success: function(response) {
+                            console.log(response)
+                            let mandalams = JSON.parse(response);
+                            let options = '<option value="" hidden>Select Mandalam</option>';
+                            mandalams.forEach(function(mandalam) {
+                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                            });
+                            $('#item_Mandalam').html(options);
+                        }
+                    });
+                } else {
+                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#item_Mandalam').change(function() {
+                console.log("hi")
+                var mandalamId = $(this).val();
+                if (mandalamId) {
+                    $.ajax({
+                        url: 'ajax/get_localbodies.php',
+                        method: 'GET',
+                        data: {
+                            mandalam_id: mandalamId
+                        },
+                        success: function(response) {
+                            console.log(response)
+                            let localbodies = JSON.parse(response);
+                            let options = '<option value="" hidden>Select Localbody</option>';
+                            localbodies.forEach(function(localbody) {
+                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                            });
+                            $('#item_Localbody').html(options);
+                        }
+                    });
+                } else {
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+        })
     </script>
 </body>
 
