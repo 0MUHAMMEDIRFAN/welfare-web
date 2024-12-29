@@ -82,16 +82,16 @@ if (isset($_GET['place_id'])) {
         $query = "SELECT * FROM {$currentTable} WHERE id = ?";
         $params = [$_GET['place_id']];
 
-        if ($parentField) {
-            $query .= " AND {$parentField} = ?";
-            $params[] = $_SESSION['user_level_id'];
-        }
+        // if ($parentField) {
+        //     $query .= " AND {$parentField} = ?";
+        //     $params[] = $_SESSION['user_level_id'];
+        // }
 
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
         $placeData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        echo "<script>console.log('PHP Variable: '" . json_encode($placeData) . ");</script>";
+        // echo "<script>console.log('PHP Variable: '" . json_encode($placeData) . ");</script>";
         // echo "<script>console.log('PHP Variable: " . addslashes($) . "');</script>";
 
         if (!$placeData) {
@@ -271,13 +271,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <?php
                             $i = 0;
-                            while ($i <= array_search($managingRole, $currentManages)) {
+                            while ($i <= array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
                                 $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
                                 echo '<div class="mb-3">
                                 <label class="form-label">' . $mainName . '</label>
-                                <select name="' . ($i == array_search($managingRole, $currentManages) ? "place_id" : "") . '" id="item_' . $mainName . '" class="form-control" required>
+                                <select name="' . ($i == ($managingRole == 'collector' ? array_search($managingRole, $currentManages) - 1 : array_search($managingRole, $currentManages)) ? "place_id" : "") . '" id="item_' . $mainName . '" class="form-control" required>
                                     <option value="" hidden>Select ' . $mainName . '</option>';
-                                if ($i == 0) {
+                                if ($isEditing) {
+                                    $mainTable = $mainTables[$i];
+                                    $mainParentField = $mainParentFields[$i];
+                                    // echo '<script>console.log('.addslashes($mainTable).')</script>';
+                                    $query = "SELECT id, name FROM {$mainTable} WHERE 1";
+                                    if ($mainParentField) {
+                                        $query .= " AND {$mainParentField} = ?";
+                                        $stmt = $pdo->prepare($query);
+                                        $stmt->execute([$adminData[$mainParentField]]);
+                                    } else {
+                                        $stmt = $pdo->query($query);
+                                    }
+                                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                        $selected = $row['id'] == $adminData[str_replace('_admin', '', $currentManages[$i]) . "_id"] ? 'selected' : '';
+                                        echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
+                                    }
+                                } else if ($i == 0) {
                                     $mainTable = $mainTables[$i];
                                     $mainParentField = $mainParentFields[$i];
                                     // echo '<script>console.log('.addslashes($mainTable).')</script>';
@@ -394,6 +410,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     });
                 } else {
                     $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#item_Localbody').change(function() {
+                console.log("hi")
+                var localbodyId = $(this).val();
+                if (localbodyId) {
+                    $.ajax({
+                        url: 'ajax/get_units.php',
+                        method: 'GET',
+                        data: {
+                            localbody_id: localbodyId
+                        },
+                        success: function(response) {
+                            console.log(response)
+                            let units = JSON.parse(response);
+                            let options = '<option value="" hidden>Select Unit</option>';
+                            units.forEach(function(unit) {
+                                options += `<option value="${unit.id}">${unit.name}</option>`;
+                            });
+                            $('#item_Unit').html(options);
+                        }
+                    });
+                } else {
+                    $('#item_Unit').html('<option value="" hidden>Select Unit</option>');
                 }
             });
         })

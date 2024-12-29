@@ -6,7 +6,7 @@ require_once '../includes/functions.php';
 // Check authentication and authorization  
 requireLogin();  
 if ($_SESSION['role'] != 'unit_admin') {  
-    header("Location: ../dashboard.php");  
+    header("Location: ../index.php");  
     exit();  
 }  
 

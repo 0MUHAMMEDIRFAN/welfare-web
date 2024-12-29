@@ -118,6 +118,16 @@ try {
               FROM {$currentTable} p
               LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
                                AND u.role = ? ";
+    
+    // $query = "SELECT u.id as admin_id,   
+    //                  u.name as admin_name,   
+    //                  u.phone as admin_phone,   
+    //                  u.is_active,  
+    //                  u.created_at as admin_created_at  
+    //                 u.
+    //             FROM users u 
+    //         --   FROM {$currentTable} p
+    //           LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id AND u.role = ? ";
 
     if ($mainField) {
         $query .= " WHERE p.{$mainField} = ?";
