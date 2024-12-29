@@ -239,6 +239,37 @@ try {
                             <label for="item_name" class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> Name</label>
                             <input type="text" class="form-control" id="item_name" required>
                         </div>
+
+                        <?php if ($canManage === 'mandalam_admin' || $canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
+                            <div class="mb-3">
+                                <label for="item_district" class="form-label">District</label>
+                                <select class="form-select" id="item_district" required>
+                                    <option value="" hidden>Select District</option>
+                                    <?php
+                                    $districts = $pdo->query("SELECT id, name FROM districts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+                                    foreach ($districts as $district) {
+                                        echo "<option value=\"{$district['id']}\">{$district['name']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <?php if ($canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
+                                <div class="mb-3">
+                                    <label for="item_mandalam" class="form-label">Mandalam</label>
+                                    <select class="form-select" id="item_mandalam" required>
+                                        <option value="" hidden>Select Mandalam</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($canManage === 'unit_admin'): ?>
+                                <div class="mb-3">
+                                    <label for="item_localbody" class="form-label">Localbody</label>
+                                    <select class="form-select" id="item_localbody" required>
+                                        <option value="" hidden>Select Localbody</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
                         <?php if ($canManage === 'localbody_admin'): ?>
                             <div class="mb-3">
                                 <label for="item_type" class="form-label">Type</label>
@@ -284,6 +315,47 @@ try {
                             <label for="edit_item_name" class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> Name</label>
                             <input type="text" class="form-control" id="edit_item_name" required>
                         </div>
+                        <?php if ($canManage === 'mandalam_admin' || $canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
+                            <div class="mb-3">
+                                <label for="item_district" class="form-label">District</label>
+                                <select class="form-select" id="item_district" required>
+                                    <option value="" hidden>Select District</option>
+                                    <?php
+                                    $districts = $pdo->query("SELECT id, name FROM districts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+                                    foreach ($districts as $district) {
+                                        echo "<option value=\"{$district['id']}\">{$district['name']}</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <?php if ($canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
+                                <div class="mb-3">
+                                    <label for="item_mandalam" class="form-label">Mandalam</label>
+                                    <select class="form-select" id="item_mandalam" required>
+                                        <option value="" hidden>Select Mandalam</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($canManage === 'unit_admin'): ?>
+                                <div class="mb-3">
+                                    <label for="item_localbody" class="form-label">Localbody</label>
+                                    <select class="form-select" id="item_localbody" required>
+                                        <option value="" hidden>Select Localbody</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        <?php if ($canManage === 'localbody_admin'): ?>
+                            <div class="mb-3">
+                                <label for="item_type" class="form-label">Type</label>
+                                <select class="form-select" id="item_type" required>
+                                    <option value="" hidden>Select Type</option>
+                                    <option value="PANCHAYATH">Panchayath</option>
+                                    <option value="MUNCIPALITY">Muncipality</option>
+                                    <option value="CORPORATION">Corporation</option>
+                                </select>
+                            </div>
+                        <?php endif; ?>
                         <div class="mb-3">
                             <label for="edit_item_target" class="form-label">Target Amount</label>
                             <input type="number" class="form-control" id="edit_item_target" required>
@@ -316,6 +388,56 @@ try {
                 $(`#${formId}`).removeClass('d-none');
             }
 
+            // After selecting orgs
+            $('#item_district').change(function() {
+                var districtId = $(this).val();
+                if (districtId) {
+                    $.ajax({
+                        url: 'ajax/get_mandalams.php',
+                        method: 'GET',
+                        data: {
+                            district_id: districtId
+                        },
+                        success: function(response) {
+                            console.log(response)
+                            let mandalams = JSON.parse(response);
+                            let options = '<option value="" hidden>Select Mandalam</option>';
+                            mandalams.forEach(function(mandalam) {
+                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                            });
+                            $('#item_mandalam').html(options);
+                        }
+                    });
+                } else {
+                    $('#item_mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                    $('#item_localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#item_mandalam').change(function() {
+                var mandalamId = $(this).val();
+                if (mandalamId) {
+                    $.ajax({
+                        url: 'ajax/get_localbodies.php',
+                        method: 'GET',
+                        data: {
+                            mandalam_id: mandalamId
+                        },
+                        success: function(response) {
+                            console.log(response)
+                            let localbodies = JSON.parse(response);
+                            let options = '<option value="" hidden>Select Localbody</option>';
+                            localbodies.forEach(function(localbody) {
+                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                            });
+                            $('#item_localbody').html(options);
+                        }
+                    });
+                } else {
+                    $('#item_localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
             // Add Item  
             $('#addItemForm').submit(function() {
                 const name = $('#item_name').val();
@@ -340,14 +462,41 @@ try {
                     level: currentLevel,
                     table: currentTable
                 };
+                if (currentLevel === 'mandalam_admin') {
+                    const district = $('#item_district').val();
+                    if (!district) {
+                        alert('Please select a district');
+                        return;
+                    }
+                    data.parent_id = district;
+                    data.parent_field = "district_id";
+                }
+                if (currentLevel === 'localbody_admin') {
+                    const mandalam = $('#item_mandalam').val();
+                    if (!mandalam) {
+                        alert('Please select a mandalam');
+                        return;
+                    }
+                    data.parent_id = mandalam;
+                    data.parent_field = "mandalam_id";
+                }
+                if (currentLevel === 'unit_admin') {
+                    const localbody = $('#item_localbody').val();
+                    if (!localbody) {
+                        alert('Please select a localbody');
+                        return;
+                    }
+                    data.parent_id = localbody;
+                    data.parent_field = "localbody_id";
+                }
                 // Add type if it's a local body  
                 if (currentLevel === 'localbody_admin') {
                     data.type = type;
                 }
-                <?php if ($parentField): ?>
-                    data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
-                    data.parent_field = '<?php echo $parentField; ?>';
-                <?php endif; ?>
+                // <?php if ($parentField): ?>
+                //     data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                //     data.parent_field = '<?php echo $parentField; ?>';
+                // <?php endif; ?>
 
                 $.ajax({
                     url: 'ajax/ajax_manage_structure.php',

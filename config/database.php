@@ -12,7 +12,7 @@ $dbname = 'partyfundsd4medi_partyfunds';
 // $password = '-m%X4oVrE!kk';  
 
 $host = 'localhost';  
-// $dbname = 'partyfunds';  
+$dbname = 'partyfundsd4medi_partyfunds';  
 $username = 'root';  
 $password = '';  
 
