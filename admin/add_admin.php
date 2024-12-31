@@ -365,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // After selecting orgs
             $('#item_District').change(function() {
                 var districtId = $(this).val();
-                $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Select District First</option>');
+                $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Districts...</option>');
                 $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Select Mandalam First</option>');
                 $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
                 if (districtId) {
@@ -386,6 +386,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 options += `<option value="" disabled>No Mandalams Under This district</option>`
                             }
                             $('#item_Mandalam').html(options);
+                        },
+                        error: function(error) {
+                            $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Districts/option>');
                         }
                     });
                 } else {
@@ -395,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $('#item_Mandalam').change(function() {
                 var mandalamId = $(this).val();
-                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Select Mandalam First</option>');
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Mandalams...</option>');
                 $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
                 if (mandalamId) {
                     $.ajax({
@@ -415,6 +418,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
                             }
                             $('#item_Localbody').html(options);
+                        },
+                        error: function(error) {
+                            $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Mandalams</option>');
                         }
                     });
                 } else {
@@ -424,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $('#item_Localbody').change(function() {
                 var localbodyId = $(this).val();
-                $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Select Localbody First</option>');
+                $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Loading Localbodies...</option>');
                 if (localbodyId) {
                     $.ajax({
                         url: 'ajax/get_units.php',
@@ -443,6 +449,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 options += `<option value="" disabled>No Units Under This Localbody</option>`
                             }
                             $('#item_Unit').html(options);
+                        },
+                        error: function(error) {
+                            $('#item_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Error Loading Localbodies</option>');
                         }
                     });
                 } else {

@@ -10,9 +10,14 @@ if ($_SESSION['role'] != 'state_admin') {  // Changed from 'state' to 'state_adm
     exit();
 }
 
+$limit = 15; // Number of records per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+$totalItems = 0;
+
 // Get collection summary with error handling  
 try {
-    $query = "SELECT   
+    $query = "SELECT SQL_CALC_FOUND_ROWS 
     d.id,  
     d.name,  
     d.target_amount,  
@@ -34,10 +39,16 @@ try {
         WHERE m.district_id = d.id  
         AND dn.deleted_at IS NULL  
     ), 0) as donation_count  
-FROM districts d";
+FROM districts d
+LIMIT :limit OFFSET :offset";
     $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $summary = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Get total items
+    $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
@@ -76,6 +87,9 @@ foreach ($summary as $row) {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="../admin/resetMpin.php">Reset Mpin</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
                     </li>
                 </ul>
@@ -84,7 +98,7 @@ foreach ($summary as $row) {
     </nav>
     <div class="dashboard">
         <div class="header">
-            <p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?> </p>
+            <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong> </p>
             <p>
                 <!-- <a href="bulk_mandalam_entry.php" class="btn btn-manage">Bulk Mandalam Entry</a><span class="gap"></span>    -->
                 <a href="../admin/manage_structure.php?level=district" class="btn btn-manage">Manage Organization</a><span class="gap"></span>
@@ -158,6 +172,28 @@ foreach ($summary as $row) {
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr class="table-info-row caption">
+                            <td colspan="12" class="">
+                                <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                    <p class="align-middle h-100 m-0">Total : <?php echo count($summary); ?> / <?php echo $totalItems; ?></p>
+                                    <div class="d-flex justify-content-center align-items-center gap-2">
+                                        <a href="?page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            ← Prev
+                                        </a>
+                                        <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                            <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                <option value="?page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                    Page <?php echo $i; ?>
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <a href="?page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            Next →
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -188,6 +224,14 @@ foreach ($summary as $row) {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
+
+            @media (max-width: 992px) {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+                @media (max-width: 668px) {
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                }
+            }
         }
 
         .card {
@@ -212,7 +256,7 @@ foreach ($summary as $row) {
 
         .btn {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 4px 16px;
             border-radius: 4px;
             text-decoration: none;
             font-size: 14px;

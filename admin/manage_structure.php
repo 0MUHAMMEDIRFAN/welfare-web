@@ -176,7 +176,7 @@ try {
                 <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
             <?php endif; ?>
             <p>
-                <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a>
             </p>
         </div>
 
@@ -198,11 +198,11 @@ try {
                                     <th><?php echo ucfirst(getSingularForm($parentFieldTable)); ?></th>
                                 <?php endif; ?>
                                 <?php if ($canManage === 'localbody_admin'): ?>
-                                    <th>Type</th>
+                                    <th class="d-none d-md-table-cell">Type</th>
                                 <?php endif; ?>
-                                <th>Target Amount</th>
-                                <th>Created At</th>
-                                <th>Updated At</th>
+                                <th class="d-none d-md-table-cell">Target Amount</th>
+                                <th class="d-none d-lg-table-cell">Created At</th>
+                                <th class="d-none d-xl-table-cell">Updated At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -220,11 +220,11 @@ try {
                                             <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
                                         <?php endif; ?>
                                         <?php if ($canManage === 'localbody_admin'): ?>
-                                            <td><?php echo htmlspecialchars($item['type']); ?></td>
+                                            <td class="d-none d-md-table-cell"><?php echo htmlspecialchars($item['type']); ?></td>
                                         <?php endif; ?>
-                                        <td class="target-amount">₹<?php echo number_format($item['target_amount'], 2); ?></td>
-                                        <td><?php echo htmlspecialchars($item['created_at']); ?></td>
-                                        <td><?php echo htmlspecialchars($item['updated_at']); ?></td>
+                                        <td class="target-amount d-none d-md-table-cell">₹<?php echo number_format($item['target_amount'], 2); ?></td>
+                                        <td class="d-none d-lg-table-cell"><?php echo htmlspecialchars($item['created_at']); ?></td>
+                                        <td class="d-none d-xl-table-cell"><?php echo htmlspecialchars($item['updated_at']); ?></td>
                                         <td>
                                             <button class="btn btn-sm btn-warning edit-item"
                                                 data-id="<?php echo $item['id']; ?>"
@@ -252,26 +252,25 @@ try {
                                 <?php endforeach; ?>
 
                                 <tr class="table-info-row caption">
-                                    <td colspan="12" class="text-center">
-                                        <nav aria-label="Page navigation">
-                                            <ul class="pagination justify-content-center">
-                                                <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                                                    <a class="page-link" href="?type=<?php echo $managingRole; ?>&page=<?php echo $page - 1; ?>" aria-label="Previous">
-                                                        <span aria-hidden="true">&laquo;</span>
-                                                    </a>
-                                                </li>
-                                                <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                    <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                                        <a class="page-link" href="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                                    </li>
-                                                <?php endfor; ?>
-                                                <li class="page-item <?php echo $page >= ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
-                                                    <a class="page-link" href="?type=<?php echo $managingRole; ?>&page=<?php echo $page + 1; ?>" aria-label="Next">
-                                                        <span aria-hidden="true">&raquo;</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </nav>
+                                    <td colspan="12" class="">
+                                        <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                            <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
+                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                    ← Prev
+                                                </a>
+                                                <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                    <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                            Page <?php echo $i; ?>
+                                                        </option>
+                                                    <?php endfor; ?>
+                                                </select>
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                    Next →
+                                                </a>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endif; ?>
@@ -302,7 +301,6 @@ try {
                             <input type="text" class="form-control" id="item_name" required>
                         </div>
 
-
                         <?php
                         $i = 0;
                         while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
@@ -314,7 +312,6 @@ try {
                             if ($i == 0) {
                                 $mainTable = $mainTables[$i];
                                 $mainParentField = $mainParentFields[$i];
-                                // echo '<script>console.log('.addslashes($mainTable).')</script>';
                                 $query = "SELECT id, name FROM {$mainTable} WHERE 1";
                                 if ($mainParentField) {
                                     $query .= " AND {$mainParentField} = ?";
@@ -334,44 +331,12 @@ try {
                             $i++;
                         }
                         ?>
-
-
-                        <!-- <?php if ($canManage === 'mandalam_admin' || $canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
-                            <div class="mb-3">
-                                <label for="item_district" class="form-label">District</label>
-                                <select class="form-select" id="item_district" required>
-                                    <option value="" hidden>Select District</option>
-                                    <?php
-                                    $districts = $pdo->query("SELECT id, name FROM districts ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-                                    foreach ($districts as $district) {
-                                        echo "<option value=\"{$district['id']}\">{$district['name']}</option>";
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <?php if ($canManage === 'localbody_admin' || $canManage === 'unit_admin'): ?>
-                                <div class="mb-3">
-                                    <label for="item_mandalam" class="form-label">Mandalam</label>
-                                    <select class="form-select" id="item_mandalam" required>
-                                        <option value="" hidden>Select Mandalam</option>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($canManage === 'unit_admin'): ?>
-                                <div class="mb-3">
-                                    <label for="item_localbody" class="form-label">Localbody</label>
-                                    <select class="form-select" id="item_localbody" required>
-                                        <option value="" hidden>Select Localbody</option>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                        <?php endif; ?> -->
                         <?php if ($canManage === 'localbody_admin'): ?>
                             <div class="mb-3">
                                 <label for="item_type" class="form-label">Type</label>
                                 <select class="form-select" id="item_type" required>
                                     <option value="" hidden>Select Type</option>
-                                    <option value="PANCHAYATH">Panchayath</option>
+                                    <option value="PANCHAYAT">Panchayat</option>
                                     <option value="MUNCIPALITY">Muncipality</option>
                                     <option value="CORPORATION">Corporation</option>
                                 </select>
@@ -420,7 +385,6 @@ try {
                                 <label class="form-label">' . $mainName . '</label>
                                 <select name="' . ($i ==  array_search($managingRole, $currentManages) - 1 ? "place_id" : "") . '" id="edit_item_' . $mainName . '" class="form-control" required>
                                     <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
-                            // if ($isEditing) {
                             $mainTable = $mainTables[$i];
                             $mainParentField = $mainParentFields[$i];
                             // echo '<script>console.log('.addslashes($mainTable).')</script>';
@@ -436,23 +400,6 @@ try {
                                 $selected = $row['id'] == $adminData[str_replace('_admin', '', $currentManages[$i]) . "_id"] ? 'selected' : '';
                                 echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
                             }
-                            // } else if ($i == 0) {
-                            //     $mainTable = $mainTables[$i];
-                            //     $mainParentField = $mainParentFields[$i];
-                            //     // echo '<script>console.log('.addslashes($mainTable).')</script>';
-                            //     $query = "SELECT id, name FROM {$mainTable} WHERE 1";
-                            //     if ($mainParentField) {
-                            //         $query .= " AND {$mainParentField} = ?";
-                            //         $stmt = $pdo->prepare($query);
-                            //         $stmt->execute([$_SESSION['user_level_id']]);
-                            //     } else {
-                            //         $stmt = $pdo->query($query);
-                            //     }
-                            //     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                            //         $selected = $row['id'] == $placeData['id'] ? 'selected' : '';
-                            //         echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
-                            //     }
-                            // }
                             echo '</select>
                                 <div class="invalid-feedback">' . $mainName . ' is required</div>
                             </div>';
@@ -483,6 +430,7 @@ try {
             const MainLevel = '<?php echo $currentManages[0]; ?>'
             const currentUserLevel = '<?php echo $currentUserRole; ?>';
             const currentTable = '<?php echo $currentTable; ?>';
+            console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
 
             function showLoading(formId, spinnerId) {
                 $(`#${spinnerId}`).removeClass('d-none');
@@ -498,15 +446,21 @@ try {
             $('#item_District').change(async function() {
                 var districtId = $(this).val();
                 if (districtId) {
+                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
                     loadMandalams(districtId).then((response) => {
                         let mandalams = JSON.parse(response);
                         let options = '<option value="" hidden>Select Mandalam</option>';
-                        mandalams.forEach(function(mandalam) {
-                            options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                        });
+                        if (mandalams.length) {
+                            mandalams.forEach(function(mandalam) {
+                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                        }
                         $('#item_Mandalam').html(options);
                     }).catch((error) => {
                         $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+                        $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
                     });
                 } else {
                     $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
@@ -516,18 +470,69 @@ try {
 
             $('#item_Mandalam').change(function() {
                 if ($(this).val()) {
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
                     loadLocalbodies($(this).val()).then((response) => {
                         let localbodies = JSON.parse(response);
                         let options = '<option value="" hidden>Select Localbody</option>';
-                        localbodies.forEach(function(localbody) {
-                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                        });
+                        if (localbodies) {
+                            localbodies.forEach(function(localbody) {
+                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                        }
                         $('#item_Localbody').html(options);
                     }).catch((error) => {
-                        $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbody</option>');
+                        $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
                     });
                 } else {
                     $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+            $('#edit_item_District').change(async function() {
+                var districtId = $(this).val();
+                if (districtId) {
+                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                    loadMandalams(districtId).then((response) => {
+                        let mandalams = JSON.parse(response);
+                        let options = '<option value="" hidden>Select Mandalam</option>';
+                        if (mandalams.length) {
+                            mandalams.forEach(function(mandalam) {
+                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                        }
+                        $('#edit_item_Mandalam').html(options);
+                    }).catch((error) => {
+                        $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam...</option>');
+                        $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                    });
+                } else {
+                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#edit_item_Mandalam').change(function() {
+                if ($(this).val()) {
+                    loadLocalbodies($(this).val()).then((response) => {
+                        let localbodies = JSON.parse(response);
+                        let options = '<option value="" hidden>Select Localbody</option>';
+                        if (localbodies.length) {
+
+                            localbodies.forEach(function(localbody) {
+                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                        }
+                        $('#edit_item_Localbody').html(options);
+                    }).catch((error) => {
+                        $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                    });
+                } else {
+                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 }
             });
 
@@ -671,7 +676,7 @@ try {
                 const id = $('#edit_item_id').val();
                 const name = $('#edit_item_name').val();
                 const target = $('#edit_item_target').val();
-                const place_id = $('#edit_item_target').val();
+                // const place_id = $('#edit_item_target').val();
                 const $btn = $('#updateItemBtn');
 
                 const data = {
@@ -683,10 +688,7 @@ try {
                     table: currentTable
                 }
                 if (currentLevel === MainLevel) {
-                    // <?php if ($parentField): ?>
-                    //     data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
-                    //     data.parent_field = '<?php echo $parentField; ?>';
-                    // <?php endif; ?>
+                    console.log(MainLevel)
                 } else if (currentLevel === 'mandalam_admin') {
                     const district = $('#edit_item_District').val();
                     if (!district) {

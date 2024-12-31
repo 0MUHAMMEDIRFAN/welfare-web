@@ -68,6 +68,12 @@ $mainField = $currentLevel['parent_field'][0];
 $singularTableName = getSingularForm($currentTable);
 
 
+$limit = 10; // Number of records per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+$totalItems = 0;
+
+
 // if ($currentUserRole === 'localbody_admin') {
 //     // $managingRole = isset($_GET['type']) && $_GET['type'] === 'collector' ? 'collector' : 'unit_admin';
 // } else {
@@ -119,7 +125,7 @@ try {
     //           LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
     //                            AND u.role = ? ";
 
-    $query = "SELECT u.id as admin_id,   
+    $query = "SELECT SQL_CALC_FOUND_ROWS u.id as admin_id,   
                      u.name as admin_name,   
                      u.phone as admin_phone,   
                      u.is_active,  
@@ -132,26 +138,30 @@ try {
                      u.{$singularTableName}_id as id,
                      p.name as name
                 FROM users u 
-                LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id
-                WHERE u.role = ?";
+                LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id 
+                WHERE u.role = :role";
+
+    if ($mainField) {
+        $query .= " AND p.{$mainField} = :user_level_id";
+    }
+    $query .= " LIMIT :limit OFFSET :offset";
+
+
     // --   FROM {$currentTable} p
     //   LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id AND u.role = ? ";
-
-    if ($mainField) {
-        $query .= " AND p.{$mainField} = ?";
-    }
-
     // $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
-    $params = [$managingRole];
-    if ($mainField) {
-        $params[] = $_SESSION['user_level_id'];
-    }
-
     $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // echo "<script>console.log(" . json_encode($places) . ")</script>";
+    $stmt->bindParam(':role', $managingRole, PDO::PARAM_STR);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+    if ($mainField) {
+        $stmt->bindParam(':user_level_id', $_SESSION['user_level_id'], PDO::PARAM_INT);
+    }
+    $stmt->execute();
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
+    // echo "<script>console.log(" . json_encode($items) . ")</script>";
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -209,14 +219,15 @@ try {
                 <div class="mb-3">
                     <?php foreach ($currentLevel['manages'] as $role): ?>
                         <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
-                            <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
+                            <span class="d-none d-lg-inline"><?php echo ucfirst(str_replace('_', ' ', $role)); ?>s</span>
+                            <span class="d-lg-none"><?php echo ucfirst(str_replace('_admin', '', $role)); ?>s</span>
                         </a>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
 
             <p>
-                <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php"" class=" btn btn-secondary">← Back</a>
             </p>
         </div>
 
@@ -243,12 +254,12 @@ try {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($places)): ?>
+                            <?php if (empty($items)): ?>
                                 <tr>
                                     <td colspan="12" class="text-center">No records found</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($places as $place): ?>
+                                <?php foreach ($items as $place): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($place['admin_id']); ?></td>
                                         <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
@@ -292,6 +303,28 @@ try {
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
+                                <tr class="table-info-row caption">
+                                    <td colspan="12" class="">
+                                        <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                            <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
+                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                    ← Prev
+                                                </a>
+                                                <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                    <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                            Page <?php echo $i; ?>
+                                                        </option>
+                                                    <?php endfor; ?>
+                                                </select>
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                    Next →
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

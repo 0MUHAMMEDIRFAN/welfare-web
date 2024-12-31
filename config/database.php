@@ -5,16 +5,16 @@
 // $username = 'welfarefunds_partyuser';  
 // $password = 'welfare@123';
 
-// $host = 'partyfunds.d4media.in:3306';  
+$host = 'partyfunds.d4media.in:3306';  
 // $host = 'server.d4media.in:3306';  
 $dbname = 'partyfundsd4medi_partyfunds';  
 // $username = 'partyfundsd4medi_prty_user';  
 // $password = '-m%X4oVrE!kk';  
 
-$host = 'localhost';  
+// $host = 'localhost';  
 $dbname = 'partyfundsd4medi_partyfunds';  
-$username = 'root';  
-$password = '';  
+$username = 'partyfundsd4medi_prty_user';  
+$password = '-m%X4oVrE!kk';  
 
 try {  
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);  

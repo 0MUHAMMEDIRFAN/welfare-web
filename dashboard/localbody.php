@@ -11,6 +11,12 @@ if ($_SESSION['role'] != 'localbody_admin') {
 
 $localbody_id = $_SESSION['user_level_id'];
 
+
+$limit = 15; // Number of records per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+$totalItems = 0;
+
 try {
     // Get location details  
     $stmt = $pdo->prepare("  
@@ -27,7 +33,7 @@ try {
     $location = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Query for units summary  
-    $query = "SELECT   
+    $query = "SELECT SQL_CALC_FOUND_ROWS
         u.id,  
         u.name,  
         u.target_amount,  
@@ -44,10 +50,14 @@ try {
             AND dn.deleted_at IS NULL  
         ), 0) as donation_count  
     FROM units u  
-    WHERE u.localbody_id = ?";
+    WHERE u.localbody_id = :localbody_id LIMIT :limit OFFSET :offset";
     $stmt = $pdo->prepare($query);
-    $stmt->execute([$localbody_id]);
+    $stmt->bindValue(':localbody_id', $localbody_id, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
     $summary = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 
     // Calculate totals  
     $totalTarget = 0;
@@ -82,6 +92,9 @@ try {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                        <a class="nav-link" href="../admin/resetMpin.php">Reset Mpin</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
                     </li>
@@ -92,7 +105,7 @@ try {
 
     <div class="dashboard">
         <div class="header">
-            <p>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?><br>
+            <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong><br>
                 (<?php echo htmlspecialchars($location['localbody_name']); ?>,<br>
                 <?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam,
                 <?php echo htmlspecialchars($location['district_name']); ?> District)</p>
@@ -166,6 +179,28 @@ try {
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr class="table-info-row caption">
+                            <td colspan="12" class="">
+                                <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                    <p class="align-middle h-100 m-0">Total : <?php echo count($summary); ?> / <?php echo $totalItems; ?></p>
+                                    <div class="d-flex justify-content-center align-items-center gap-2">
+                                        <a href="?page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            ← Prev
+                                        </a>
+                                        <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                            <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                <option value="?page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                    Page <?php echo $i; ?>
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <a href="?page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            Next →
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -196,6 +231,14 @@ try {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
+
+            @media (max-width: 992px) {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+                @media (max-width: 668px) {
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                }
+            }
         }
 
         .card {
@@ -220,7 +263,7 @@ try {
 
         .btn {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 4px 16px;
             border-radius: 4px;
             text-decoration: none;
             font-size: 14px;

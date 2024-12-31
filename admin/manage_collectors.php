@@ -178,7 +178,7 @@ try {
         <div class="header">  
                 <h2>Manage Collectors</h2>  
                 <p>  
-                    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                    <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a>
                 </p>  
         </div>  
 

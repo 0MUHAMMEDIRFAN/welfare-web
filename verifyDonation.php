@@ -74,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <button class="" type="submit">Verify</button>
         </form>
         <div style="text-align: center; margin-top: 20px;">
-            <a href="index.php" class="btn btn-secondary">Go Back to Login Page</a>
+            <a href="index.php" class="btn btn-secondary">← Go Back to Login Page</a>
         </div>
     </div>
 
@@ -101,12 +101,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .success {
-            color: #ffffff;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
             padding: 10px;
             margin-bottom: 20px;
-            background: #4CAF50;
             border-radius: 4px;
             text-align: center;
+        }
+
+        form div {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
         button {
@@ -122,6 +141,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         button:hover {
             background: #45a049;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
         }
     </style>
 
