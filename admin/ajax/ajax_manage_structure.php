@@ -84,6 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $_POST['id'] ?? '';
                 $name = $_POST['name'] ?? '';
                 $target = $_POST['target_amount'] ?? 0;
+                $parent_id = $_POST['parent_id'] ?? null;
+                $parent_field = $_POST['parent_field'] ?? null;
 
                 // Verify ownership if not state admin  
                 // if ($_SESSION['role'] !== 'state_admin') {
@@ -114,14 +116,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 //         }
                 //     }
                 // }
+                if ($parent_field) {
+                    $query = "UPDATE $table SET name = :name, target_amount = :target, $parent_field = :parent_id WHERE id = :id";
+                    $params = [
+                        ':name' => $name,
+                        ':target' => $target,
+                        ':parent_id' => $parent_id,
+                        ':id' => $id
+                    ];
+                } else {
+                    $query = "UPDATE $table SET name = :name, target_amount = :target WHERE id = :id";
+                    $params = [
+                        ':name' => $name,
+                        ':target' => $target,
+                        ':id' => $id
+                    ];
+                }
 
-                $query = "UPDATE $table SET name = :name, target_amount = :target WHERE id = :id";
+
                 $stmt = $pdo->prepare($query);
-                $result = $stmt->execute([
-                    ':name' => $name,
-                    ':target' => $target,
-                    ':id' => $id
-                ]);
+                $result = $stmt->execute($params);
 
                 if ($result) {
                     echo json_encode(['success' => true]);

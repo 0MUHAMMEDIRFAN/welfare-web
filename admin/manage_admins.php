@@ -151,7 +151,7 @@ try {
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo "<script>console.log(" . json_encode($places) . ")</script>";
+    // echo "<script>console.log(" . json_encode($places) . ")</script>";
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -204,16 +204,21 @@ try {
         <?php if (isset($error_message)): ?>
             <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
         <?php endif; ?>
+        <div class="header">
+            <?php if (count($currentLevel['manages']) > 1): ?>
+                <div class="mb-3">
+                    <?php foreach ($currentLevel['manages'] as $role): ?>
+                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
+                            <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
-        <?php if (count($currentLevel['manages']) > 1): ?>
-            <div class="mb-3">
-                <?php foreach ($currentLevel['manages'] as $role): ?>
-                    <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
-                        <?php echo ucfirst(str_replace('_', ' ', $role)); ?>s
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+            <p>
+                <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+            </p>
+        </div>
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
