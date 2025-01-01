@@ -5,16 +5,21 @@
 // $username = 'welfarefunds_partyuser';  
 // $password = 'welfare@123';
 
-$host = 'partyfunds.d4media.in:3306';  
+// $host = 'partyfunds.d4media.in:3306';  
 // $host = 'server.d4media.in:3306';  
-$dbname = 'partyfundsd4medi_partyfunds';  
+// $dbname = 'partyfundsd4medi_partyfunds';  
+// $port = 3306;
 // $username = 'partyfundsd4medi_prty_user';  
 // $password = '-m%X4oVrE!kk';  
 
-// $host = 'localhost';  
-$dbname = 'partyfundsd4medi_partyfunds';  
-$username = 'partyfundsd4medi_prty_user';  
-$password = '-m%X4oVrE!kk';  
+// $host = 'https://phpstack-1309512-5146856.cloudwaysapps.com/';  
+// $dbname = 'partyfundsd4medi_partyfunds';  
+// $username = 'partyfundsd4medi_prty_user';  
+// $password = '-m%X4oVrE!kk';  
+$host = '167.172.226.184:3306';  
+$dbname = 'czpwckszqj';  
+$username = 'czpwckszqj';  
+$password = '3Un7QxR2be';  
 
 try {  
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);  

@@ -5,20 +5,20 @@ require_once 'config/database.php';
 $error = '';
 $success = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Get transaction ID and phone number from request
-    $transaction_id = trim($_POST['transaction_id']);
+    // Get receipt number and phone number from request
+    $receipt_number = trim($_POST['receipt_number']);
     $phone_number = trim($_POST['phone_number']);
 
     // Validate inputs
-    if (empty($transaction_id) || empty($phone_number)) {
-        echo "Transaction ID and Phone Number are required.";
+    if (empty($receipt_number) || empty($phone_number)) {
+        echo "Receipt Number and Phone Number are required.";
     } else {
         try {
             // Prepare and bind
-            $stmt = $pdo->prepare("SELECT * FROM donations WHERE transaction_id = ? AND mobile_number = ?");
+            $stmt = $pdo->prepare("SELECT * FROM donations WHERE receipt_number = ? AND mobile_number = ?");
 
             // Execute the statement
-            $stmt->execute([$transaction_id, $phone_number]);
+            $stmt->execute([$receipt_number, $phone_number]);
 
             // Get the result
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -29,8 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $success .= "Donation verified: " . htmlspecialchars($row["name"]) . " donated " . htmlspecialchars($row["amount"]) . " on " . htmlspecialchars($row["created_at"]) . "<br>";
                 }
             } else {
-                $error = "No donation found with the provided transaction ID and phone number.";
-                // echo "No donation found with the provided transaction ID and phone number.";
+                $error = "No donation found with the provided receipt number and phone number.";
             }
         } catch (PDOException $e) {
             echo "Error: " . $e->getMessage();
@@ -64,8 +63,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php endif; ?>
         <form method="post" action="verifyDonation.php">
             <div>
-                <label for="transaction_id">Transaction ID</label>
-                <input type="text" id="transaction_id" name="transaction_id" required><br><br>
+                <label for="receipt_number">Receipt Number</label>
+                <input type="text" id="receipt_number" name="receipt_number" required><br><br>
             </div>
             <div>
                 <label for="phone_number">Phone Number</label>
@@ -84,7 +83,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-inline: auto;
             margin-top: 40px;
             margin-bottom: 40px;
-            /* margin: 100px auto; */
             padding: 30px;
             background: white;
             border-radius: 8px;
