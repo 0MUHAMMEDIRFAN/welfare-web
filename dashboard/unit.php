@@ -71,9 +71,9 @@ try {
     $totalTarget = $location['unit_target_amount'];
     $totalDonations = 0;
 
-    echo "<script>console.log(" . json_encode($summary) . ");</script>";
-    echo "<script>console.log(" . json_encode($location) . ");</script>";
-    echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
+    // echo "<script>console.log(" . json_encode($summary) . ");</script>";
+    // echo "<script>console.log(" . json_encode($location) . ");</script>";
+    // echo "<script>console.log(" . json_encode($_SESSION) . ");</script>";
 
 
     foreach ($summary as $row) {
@@ -119,12 +119,12 @@ try {
 
     <div class="dashboard">
         <div class="header">
-            <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
+            <p class="d-flex flex-wrap gap-1">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
                 (<?php echo htmlspecialchars($location['unit_name']); ?> Unit,
                 <?php echo htmlspecialchars($location['localbody_name']); ?>,<br>
                 <?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam,
                 <?php echo htmlspecialchars($location['district_name']); ?> District)</p>
-            <p>
+            <p class="d-flex gap-2 flex-wrap justify-content-end">
                 <a href="../admin/manage_collectors.php?unit_id=<?php echo $unit_id; ?>" class="btn btn-manage">Manage Collectors</a>
             </p>
 
@@ -152,7 +152,7 @@ try {
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Collected Amount</th>
-                        <th>Persons Donated</th>
+                        <th class="d-none d-lg-table-cell">Persons Donated</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -168,7 +168,7 @@ try {
                                 <td><?php echo htmlspecialchars($row['name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['phone']); ?></td>
                                 <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
                                     <span class="status-badge <?php echo $row['is_active'] == 1 ? 'active' : 'inactive'; ?>">
                                         <?php echo $row['is_active'] == 1 ? 'Active' : 'Inactive'; ?>

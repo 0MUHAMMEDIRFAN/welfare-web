@@ -106,9 +106,10 @@ try {
 
     <div class="dashboard">
         <div class="header">
-            <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
+            <p class="d-flex flex-wrap gap-1">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
                 (<?php echo htmlspecialchars($district['name']); ?> District)</p>
-            <p> <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a><span class="gap"></span>
+            <p class="d-flex gap-2 flex-wrap justify-content-end">
+                <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
                 <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>
@@ -141,7 +142,7 @@ try {
                         <th>Target Amount</th>
                         <th>Collected Amount</th>
                         <th>Achievement</th>
-                        <th>Persons Donated</th>
+                        <th class="d-none d-lg-table-cell">Persons Donated</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -171,7 +172,7 @@ try {
                                     echo number_format($percentage, 2) . '%';
                                     ?>
                                 </td>
-                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
                                     <a href="view_details.php?level=mandalam&id=<?php echo $row['id']; ?>"
                                         class="btn btn-view">View Details</a>

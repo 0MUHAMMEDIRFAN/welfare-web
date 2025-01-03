@@ -95,7 +95,7 @@ try {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
+                    <li class="nav-item">
                         <a class="nav-link" href="../admin/resetMpin.php">Reset Mpin</a>
                     </li>
                     <li class="nav-item">
@@ -108,11 +108,12 @@ try {
 
     <div class="dashboard">
         <div class="header">
-            <p>Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong><br>
+            <p class="d-flex flex-wrap gap-1">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong><br>
                 (<?php echo htmlspecialchars($location['localbody_name']); ?>,<br>
                 <?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam,
                 <?php echo htmlspecialchars($location['district_name']); ?> District)</p>
-            <p> <a href="../admin/manage_structure.php?level=unit" class="btn btn-manage">Manage Units</a><span class="gap"></span>
+            <p class="d-flex gap-2 flex-wrap justify-content-end">
+                <a href="../admin/manage_structure.php?level=unit" class="btn btn-manage">Manage Units</a>
                 <a href="../admin/manage_admins.php?level=unit" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>
@@ -145,7 +146,7 @@ try {
                         <th>Target Amount</th>
                         <th>Collected Amount</th>
                         <th>Achievement</th>
-                        <th>Persons Donated</th>
+                        <th class="d-none d-lg-table-cell">Persons Donated</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -175,7 +176,7 @@ try {
                                     echo number_format($percentage, 2) . '%';
                                     ?>
                                 </td>
-                                <td><?php echo number_format($row['donation_count']); ?></td>
+                                <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
                                     <a href="view_details.php?level=unit&id=<?php echo $row['id']; ?>"
                                         class="btn btn-view">View Details</a>

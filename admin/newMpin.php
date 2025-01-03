@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot MPIN</title>
+    <title>SET NEW MPIN</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -23,10 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <body>
     <div class="login-container">
-        <h2>Forgot MPIN</h2>
+        <h2>SET NEW MPIN</h2>
         <div class="error d-none" id="error"><?php echo $error; ?></div>
         <div class="success d-none" id="success"><?php echo $success; ?></div>
-        <form action="forgotMpin.php" method="post">
+        <form action="newMpin.php" method="post">
             <div class="form-group">
                 <label for="phone">Phone</label>
                 <input type="text" id="phone" name="phone" required>
@@ -192,7 +192,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         response = JSON.parse(response)
                         if (response.status == 200) {
                             isotpsent = true;
-                            $('form .submit-button').before('<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container"><input type="password" id="new_mpin" name="new_mpin" required><span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span></div></div>');
+                            $('form .submit-button').before('<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container"><input type="password" id="new_mpin" name="new_mpin" pattern="\d{4,6}" minlength="4" maxlength="6" required><span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span></div></div>');
                             $('#success').html(response.message).removeClass('d-none');
                         } else {
                             $('#error').removeClass('d-none').html(response.message);

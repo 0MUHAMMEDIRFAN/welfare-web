@@ -22,45 +22,54 @@ function login($phone, $mpin, $pdo)
     //     $stmt->execute([$mandalam_id]);
     //     $location = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($mpin, $user['mpin'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['name'] = $user['name'];
-        $_SESSION['level'] = '';
+    if ($user) {
+        if (!$user['mpin']) {
+            return ['status' => false, 'message' => "This User has not set mpin <h6><a href='./admin/newMpin.php'>SET NEW MPIN</a></h6>"];
+        } else if (password_verify($mpin, $user['mpin'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['name'] = $user['name'];
+            $_SESSION['level'] = '';
 
-        // Set the correct dashboard path based on role  
-        switch ($user['role']) {
-            case 'state_admin':
-                $_SESSION['level'] = 'state';
-                $_SESSION['user_level_id'] = 1;
-                header('Location: dashboard/state.php');
-                break;
-            case 'district_admin':
-                $_SESSION['level'] = 'district';
-                $_SESSION['user_level_id'] = $user['district_id'];
-                header('Location: dashboard/district.php');
-                break;
-            case 'mandalam_admin':
-                $_SESSION['level'] = 'mandalam';
-                $_SESSION['user_level_id'] = $user['mandalam_id'];
-                header('Location: dashboard/mandalam.php');
-                break;
-            case 'localbody_admin':
-                $_SESSION['level'] = 'localbody';
-                $_SESSION['user_level_id'] = $user['localbody_id'];
-                header('Location: dashboard/localbody.php');
-                break;
-            case 'unit_admin':
-                $_SESSION['level'] = 'unit';
-                $_SESSION['user_level_id'] = $user['unit_id'];
-                header('Location: dashboard/unit.php');
-                break;
-            default:
-                header('Location: index.php');
+            // Set the correct dashboard path based on role  
+            switch ($user['role']) {
+                case 'state_admin':
+                    $_SESSION['level'] = 'state';
+                    $_SESSION['user_level_id'] = 1;
+                    header('Location: dashboard/state.php');
+                    break;
+                case 'district_admin':
+                    $_SESSION['level'] = 'district';
+                    $_SESSION['user_level_id'] = $user['district_id'];
+                    header('Location: dashboard/district.php');
+                    break;
+                case 'mandalam_admin':
+                    $_SESSION['level'] = 'mandalam';
+                    $_SESSION['user_level_id'] = $user['mandalam_id'];
+                    header('Location: dashboard/mandalam.php');
+                    break;
+                case 'localbody_admin':
+                    $_SESSION['level'] = 'localbody';
+                    $_SESSION['user_level_id'] = $user['localbody_id'];
+                    header('Location: dashboard/localbody.php');
+                    break;
+                case 'unit_admin':
+                    $_SESSION['level'] = 'unit';
+                    $_SESSION['user_level_id'] = $user['unit_id'];
+                    header('Location: dashboard/unit.php');
+                    break;
+                case 'collector':
+                    return ['status' => false, 'message' => 'Collector Login Restricted!'];
+                    break;
+                default:
+                    return ['status' => false, 'message' => 'This user is not Allowed! Contact Admin'];
+            }
+            exit();
+        } else {
+            return ['status' => false, 'message' => 'Invalid Credentials'];
         }
-        exit();
     }
-    return false;
+    return ['status' => false, 'message' => 'Invalid Credentials'];
 }
 
 function isLoggedIn()

@@ -81,22 +81,22 @@ $totalItems = 0;
 // }
 
 // Handle MPIN update  
-if (isset($_POST['update_mpin'])) {
-    try {
-        if (!preg_match("/^\d{4,6}$/", $_POST['new_mpin'])) {
-            throw new Exception("MPIN must be 4-6 digits");
-        }
-        $stmt = $pdo->prepare("UPDATE users SET mpin = ?, updated_at = NOW() WHERE id = ? AND role = ?");
-        $stmt->execute([
-            password_hash($_POST['new_mpin'], PASSWORD_DEFAULT),
-            $_POST['admin_id'],
-            $managingRole
-        ]);
-        $success_message = "MPIN updated successfully";
-    } catch (Exception $e) {
-        $error_message = $e->getMessage();
-    }
-}
+// if (isset($_POST['update_mpin'])) {
+//     try {
+//         if (!preg_match("/^\d{4,6}$/", $_POST['new_mpin'])) {
+//             throw new Exception("MPIN must be 4-6 digits");
+//         }
+//         $stmt = $pdo->prepare("UPDATE users SET mpin = ?, updated_at = NOW() WHERE id = ? AND role = ?");
+//         $stmt->execute([
+//             password_hash($_POST['new_mpin'], PASSWORD_DEFAULT),
+//             $_POST['admin_id'],
+//             $managingRole
+//         ]);
+//         $success_message = "MPIN updated successfully";
+//     } catch (Exception $e) {
+//         $error_message = $e->getMessage();
+//     }
+// }
 
 // Handle status toggle  
 if (isset($_POST['toggle_status'])) {
@@ -219,7 +219,7 @@ try {
         <?php endif; ?>
         <div class="header">
             <?php if (count($currentLevel['manages']) > 1): ?>
-                <div class="mb-3">
+                <div class="mb-3 d-flex gap-1 flex-wrap">
                     <?php foreach ($currentLevel['manages'] as $role): ?>
                         <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
                             <span class="d-none d-lg-inline"><?php echo ucfirst(str_replace('_', ' ', $role)); ?>s</span>
@@ -280,10 +280,10 @@ try {
                                         <td class="text-end" style="width: 130px;">
                                             <div class="action-buttons">
                                                 <?php if ($place['admin_id']): ?>
-                                                    <button onclick="showMpinModal(<?php echo $place['admin_id']; ?>)"
+                                                    <!-- <button onclick="showMpinModal(<?php echo $place['admin_id']; ?>)"
                                                         class="btn btn-warning btn-sm">
                                                         <i class="fas fa-key"></i>
-                                                    </button>
+                                                    </button> -->
                                                     <form method="POST" style="display: inline;">
                                                         <input type="hidden" name="admin_id" value="<?php echo $place['admin_id']; ?>">
                                                         <input type="hidden" name="status" value="<?php echo $place['is_active']; ?>">
@@ -337,7 +337,7 @@ try {
     </div>
 
     <!-- MPIN Update Modal -->
-    <div class="modal fade" id="mpinModal" tabindex="-1">
+    <!-- <div class="modal fade" id="mpinModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -361,15 +361,15 @@ try {
                 </form>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function showMpinModal(adminId) {
-            document.getElementById('modal_admin_id').value = adminId;
-            var mpinModal = new bootstrap.Modal(document.getElementById('mpinModal'));
-            mpinModal.show();
-        }
+        // function showMpinModal(adminId) {
+        //     document.getElementById('modal_admin_id').value = adminId;
+        //     var mpinModal = new bootstrap.Modal(document.getElementById('mpinModal'));
+        //     mpinModal.show();
+        // }
     </script>
 </body>
 

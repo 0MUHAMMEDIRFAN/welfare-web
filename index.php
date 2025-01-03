@@ -28,9 +28,10 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $phone = $_POST['phone'] ?? '';
     $mpin = $_POST['mpin'] ?? '';
-
-    if (!login($phone, $mpin, $pdo)) {
-        $error = 'Invalid credentials';
+    $result = login($phone, $mpin, $pdo);
+    echo '<script>console.log(' . json_encode($result['status']) . ')</script>';
+    if (!$result['status']) {
+        $error = $result['message'];
     }
 }
 ?>
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="password" name="mpin" required>
             </div>
             <p class="text-end mb-2">
-                <a href="./admin/forgotMpin.php" class="fw-bolder small text-primary">Forgot MPIN?</a>
+                <a href="./admin/newMpin.php" class="fw-bolder small text-primary">Forgot MPIN?</a>
             </p>
             <button type="submit">Login</button>
         </form>

@@ -26,6 +26,7 @@ if (isset($_SESSION['otp'])  && isset($_SESSION['phone'])) {
                 unset($_SESSION['otp']);
                 unset($_SESSION['otp_expiry']);
                 unset($_SESSION['phone']);
+                session_destroy();
                 echo json_encode(['status' => true, 'message' => 'OTP verified and MPIN updated successfully']);
             } else {
                 echo json_encode(['status' => false, 'message' => 'Failed to update MPIN']);

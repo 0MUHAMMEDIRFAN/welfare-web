@@ -129,13 +129,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Phone number must be 10 digits");
         }
 
-        if (!$isEditing && empty($_POST['mpin'])) {
-            throw new Exception("MPIN is required for new admin");
-        }
+        // if (!$isEditing && empty($_POST['mpin'])) {
+        //     throw new Exception("MPIN is required for new admin");
+        // }
 
-        if (isset($_POST['mpin']) && !empty($_POST['mpin']) && !preg_match("/^\d{4,6}$/", $_POST['mpin'])) {
-            throw new Exception("MPIN must be 4-6 digits");
-        }
+        // if (isset($_POST['mpin']) && !empty($_POST['mpin']) && !preg_match("/^\d{4,6}$/", $_POST['mpin'])) {
+        //     throw new Exception("MPIN must be 4-6 digits");
+        // }
 
         // Check if phone number already exists  
         $phoneCheckQuery = "SELECT id FROM users WHERE phone = ? AND role = ? ";
@@ -159,10 +159,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateFields = ["name = ?", "phone = ?", "{$singularTableName}_id = ?", "updated_at = NOW()"];
             $params = [$_POST['name'], $_POST['phone'], $_POST['place_id']];
 
-            if (!empty($_POST['mpin'])) {
-                $updateFields[] = "mpin = ?";
-                $params[] = password_hash($_POST['mpin'], PASSWORD_DEFAULT);
-            }
+            // if (!empty($_POST['mpin'])) {
+            //     $updateFields[] = "mpin = ?";
+            //     $params[] = password_hash($_POST['mpin'], PASSWORD_DEFAULT);
+            // }
 
             $params[] = $adminData['id'];
 
@@ -170,12 +170,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute($params);
         } else {
             // Add new admin  
-            $stmt = $pdo->prepare("INSERT INTO users (name, phone, mpin, role, {$singularTableName}_id, created_at, updated_at)   
-                                 VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
+            $stmt = $pdo->prepare("INSERT INTO users (name, phone, role, {$singularTableName}_id, created_at, updated_at)   
+                                 VALUES (?, ?, ?, ?, NOW(), NOW())");
             $stmt->execute([
                 $_POST['name'],
                 $_POST['phone'],
-                password_hash($_POST['mpin'], PASSWORD_DEFAULT),
+                // password_hash($_POST['mpin'], PASSWORD_DEFAULT),
                 $managingRole,
                 $_POST['place_id']
             ]);
@@ -319,7 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $i++;
                             }
                             ?>
-
+<!-- 
                             <div class="mb-3">
                                 <label class="form-label"><?php echo $isEditing ? 'New MPIN (leave blank to keep current)' : 'MPIN'; ?></label>
                                 <input type="password" name="mpin" class="form-control"
@@ -327,7 +327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     pattern="\d{4,6}" minlength="4" maxlength="6">
                                 <div class="form-text">MPIN must be 4-6 digits</div>
                                 <div class="invalid-feedback">Valid MPIN is required (4-6 digits)</div>
-                            </div>
+                            </div> -->
 
                             <div class="d-flex justify-content-between">
                                 <a href="manage_admins.php?type=<?php echo $managingRole; ?>"

@@ -432,7 +432,7 @@ try {
             const MainLevel = '<?php echo $currentManages[0]; ?>'
             const currentUserLevel = '<?php echo $currentUserRole; ?>';
             const currentTable = '<?php echo $currentTable; ?>';
-            console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
+            // console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
 
             function showLoading(formId, spinnerId) {
                 $(`#${spinnerId}`).removeClass('d-none');
@@ -637,7 +637,7 @@ try {
                 $('#edit_item_Localbody').val(localbody_id);
                 $('#edit_item_District').val(district_id);
 
-                console.log(district_id)
+                // console.log(district_id)
 
                 if (mandalam_id) {
                     loadLocalbodies(mandalam_id).then((response) => {
@@ -690,7 +690,7 @@ try {
                     table: currentTable
                 }
                 if (currentLevel === MainLevel) {
-                    console.log(MainLevel)
+                    console.log("MainLevel")
                 } else if (currentLevel === 'mandalam_admin') {
                     const district = $('#edit_item_District').val();
                     if (!district) {

@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                             <div class="mb-3">
                                 <label for="new_mpin" class="form-label">New MPIN</label>
-                                <input type="password" id="new_mpin" name="new_mpin" class="form-control" required>
+                                <input type="password" id="new_mpin" name="new_mpin" class="form-control" pattern="\d{4,6}" minlength="4" maxlength="6" required>
                             </div>
                             <div class="mb-3">
                                 <label for="verify_mpin" class="form-label">Verify MPIN</label>
