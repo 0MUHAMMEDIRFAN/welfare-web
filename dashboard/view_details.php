@@ -5,6 +5,12 @@ require_once '../includes/functions.php';
 
 requireLogin();
 
+
+$limit = 10; // Number of records per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+$totalItems = 0;
+
 $level = $_GET['level'] ?? '';
 $id = $_GET['id'] ?? '';
 $collector_id = $_GET['colid'] ?? '';
@@ -16,6 +22,40 @@ if ($collector_id) {
 if (!$level || !$id) {
     die("Invalid parameters");
 }
+
+// Define admin hierarchy and their manageable levels  
+$levelHierarchy = [
+    'district' => [
+        'child' => ['mandalam', "localbody", "unit", "collector"],
+        'child_tables' => ["mandalams", "localbodies", "units", "units"],
+        'name_field' => 'name',
+        'parent' => null,
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id", "localbody_id"],
+    ],
+    'mandalam' => [
+        'child' => ["localbody", "unit", "collector"],
+        'child_tables' => ["localbodies", "units", "units"],
+        'name_field' => 'name',
+        'parent' => 'district',
+        'parent_field' => ["mandalam_id", "localbody_id", "localbody_id"],
+    ],
+    'localbody' => [
+        'child' => ["unit", "collector"],
+        'child_tables' => ['units', 'units'],
+        'name_field' => 'name',
+        'parent' => 'mandalam',
+        'parent_field' => ["localbody_id", "localbody_id"],
+    ],
+    'unit' => [
+        'child' => ["collector"],
+        'child_tables' => ['units'],
+        'name_field' => 'name',
+        'parent' => 'localbody',
+        'parent_field' => ["localbody_id"],
+    ]
+];
+
+$currentLevelPerm = $levelHierarchy[$level];
 
 try {
     // Get the current level details  
@@ -62,8 +102,11 @@ try {
     }
 
     // Get collection details  
+
+
+
     $collectionQuery = match ($level) {
-        'district' => "SELECT   
+        'district' => "SELECT SQL_CALC_FOUND_ROWS   
             m.name as mandalam_name, m.id as mandalam_id,  
             COALESCE(SUM(d.amount), 0) as total_amount,  
             COUNT(DISTINCT d.id) as total_donations  
@@ -73,8 +116,9 @@ try {
             LEFT JOIN donations d ON d.unit_id = u.id  
             WHERE m.district_id = ?  
             GROUP BY m.id, m.name  
-            ORDER BY m.name",
-        'mandalam' => "SELECT   
+            ORDER BY m.name  
+            LIMIT $limit OFFSET $offset",
+        'mandalam' => "SELECT SQL_CALC_FOUND_ROWS   
             l.name as localbody_name, l.id as localbody_id,  
             COALESCE(SUM(d.amount), 0) as total_amount,  
             COUNT(DISTINCT d.id) as total_donations  
@@ -83,8 +127,9 @@ try {
             LEFT JOIN donations d ON d.unit_id = u.id  
             WHERE l.mandalam_id = ?  
             GROUP BY l.id, l.name  
-            ORDER BY l.name",
-        'localbody' => "SELECT   
+            ORDER BY l.name  
+            LIMIT $limit OFFSET $offset",
+        'localbody' => "SELECT SQL_CALC_FOUND_ROWS   
             u.name as unit_name, u.id as unit_id,  
             COALESCE(SUM(d.amount), 0) as total_amount,  
             COUNT(DISTINCT d.id) as total_donations  
@@ -92,19 +137,23 @@ try {
             LEFT JOIN donations d ON d.unit_id = u.id  
             WHERE u.localbody_id = ?  
             GROUP BY u.id, u.name  
-            ORDER BY u.name",
-        'unit' => "SELECT   
+            ORDER BY u.name  
+            LIMIT $limit OFFSET $offset",
+        'unit' => "SELECT SQL_CALC_FOUND_ROWS   
             d.*, u.name as collector_name  
             FROM donations d  
             LEFT JOIN users u ON d.collector_id = u.id  
             WHERE d.unit_id = ?  $collector_filter
-            ORDER BY d.created_at DESC",
+            ORDER BY d.created_at DESC  
+            LIMIT $limit OFFSET $offset",
         default => throw new Exception("Invalid level")
     };
 
     $stmt = $pdo->prepare($collectionQuery);
     $stmt->execute([$id]);
     $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -117,6 +166,8 @@ try {
     <title>Details View</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
@@ -137,14 +188,15 @@ try {
     </nav>
     <div class="dashboard">
         <div class="header">
-            <h1><?php echo ucfirst($level); ?> Details</h1>
+            <h2><?php echo htmlspecialchars($details['name']); ?> <?php echo ucfirst($level); ?> Details</h2>
             <p>
+                <!-- <a href="<?php echo $currentLevelPerm['parent'] ? './view_details.php?level=' . $currentLevelPerm['parent'] . '&id=' . $id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-secondary">← Back</a> -->
                 <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+
             </p>
         </div>
 
         <div class="details-section">
-            <h2><?php echo htmlspecialchars($details['name']); ?></h2>
 
             <?php if ($level != 'district'): ?>
                 <p class="breadcrumb">
@@ -183,7 +235,7 @@ try {
                 <?php endif; ?>
             </div>
 
-            <div class="content">
+            <div class="content table-responsive">
                 <h3>Collection Details</h3>
                 <table>
                     <thead>
@@ -250,15 +302,37 @@ try {
                                                                                 'localbody' => 'unit'
                                                                             };
                                                                             ?>&id=<?php echo $row[match ($level) {
-                                                                                    'district' => 'mandalam_id',
-                                                                                    'mandalam' => 'localbody_id',
-                                                                                    'localbody' => 'unit_id'
-                                                                                }]; ?>"
+                                                                                        'district' => 'mandalam_id',
+                                                                                        'mandalam' => 'localbody_id',
+                                                                                        'localbody' => 'unit_id'
+                                                                                    }]; ?>"
                                                 class="btn btn-view">View Details</a>
                                         </td>
                                     <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
+                            <tr class="table-info-row caption">
+                                <td colspan="12" class="">
+                                    <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                        <p class="align-middle h-100 m-0">Total : <?php echo count($collections); ?> / <?php echo $totalItems; ?></p>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                ← Prev
+                                            </a>
+                                            <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                    <option value="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        Page <?php echo $i; ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                Next →
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -314,7 +388,7 @@ try {
 
         .btn {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 4px 16px;
             border-radius: 4px;
             text-decoration: none;
             font-size: 14px;

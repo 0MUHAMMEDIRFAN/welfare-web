@@ -1,30 +1,43 @@
 <?php
-// $host = 'https://welfarefunds.d4media.in';  
-// $host = 'localhost';  
-// $dbname = 'welfarefunds_partyfunds';  
-// $username = 'welfarefunds_partyuser';  
-// $password = 'welfare@123';
+function loadEnv($filePath)
+{
+    if (!file_exists($filePath)) {
+        throw new Exception(".env file not found at: " . $filePath);
+    }
 
-// $host = 'partyfunds.d4media.in:3306';  
-// $host = 'server.d4media.in:3306';  
-// $dbname = 'partyfundsd4medi_partyfunds';  
-// $port = 3306;
-// $username = 'partyfundsd4medi_prty_user';  
-// $password = '-m%X4oVrE!kk';  
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
-// $host = 'https://phpstack-1309512-5146856.cloudwaysapps.com/';  
-// $dbname = 'partyfundsd4medi_partyfunds';  
-// $username = 'partyfundsd4medi_prty_user';  
-// $password = '-m%X4oVrE!kk';  
-$host = '167.172.226.184:3306';  
-$dbname = 'czpwckszqj';  
-$username = 'czpwckszqj';  
-$password = '3Un7QxR2be';  
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Skip comments
+        }
 
-try {  
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);  
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);  
-} catch(PDOException $e) {  
-    die("Connection failed: " . $e->getMessage());  
-}  
-?>
+        $keyValue = explode('=', $line, 2);
+
+        if (count($keyValue) === 2) {
+            $key = trim($keyValue[0]);
+            $value = trim($keyValue[1]);
+
+            // Remove quotes if present
+            $value = trim($value, '"');
+
+            // Store in environment variables
+            putenv("$key=$value");
+        }
+    }
+}
+
+loadEnv(dirname(__DIR__) . '/.env.local');
+
+
+$host = getenv('DB_HOST');
+$dbname = getenv('DB_NAME');
+$username = getenv('DB_USERNAME');
+$password = getenv('DB_PASSWORD');
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}

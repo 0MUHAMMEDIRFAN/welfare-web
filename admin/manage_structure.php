@@ -129,6 +129,9 @@ try {
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style>
         .table td {
             vertical-align: middle;
@@ -161,10 +164,9 @@ try {
     </nav>
 
     <div class="container mt-4">
-        <div class="header">
+        <div class="header d-flex gap-1">
             <?php if (count($currentManages) > 1): ?>
-                <div class="mb-3">
-
+                <div class="mb-3 d-flex flex-wrap gap-1">
                     <?php foreach ($currentManages as $role): ?>
                         <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
                             <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
@@ -175,7 +177,7 @@ try {
             <?php else: ?>
                 <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
             <?php endif; ?>
-            <p>
+            <p class="">
                 <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a>
             </p>
         </div>

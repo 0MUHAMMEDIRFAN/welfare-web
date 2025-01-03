@@ -34,14 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 ?>
+
+
 <!DOCTYPE html>
 <html>
 
 <head>
     <title>Login - Party Fund Collection</title>
+
     <link rel="stylesheet" href="assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
@@ -61,10 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label>Phone</label>
                 <input type="text" name="phone" required>
             </div>
-            <div>
+            <div class="mb-2">
                 <label>MPIN</label>
                 <input type="password" name="mpin" required>
             </div>
+            <p class="text-end mb-2">
+                <a href="./admin/forgotMpin.php" class="fw-bolder small text-primary">Forgot MPIN?</a>
+            </p>
             <button type="submit">Login</button>
         </form>
     </div>
@@ -136,6 +143,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background: #45a049;
         }
 
+        .custom_button {
+            max-width: 340px;
+            width: 100%;
+        }
+
         h2 {
             text-align: center;
             color: #333;
@@ -174,5 +186,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     </style>
 </body>
+<!-- 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('form').on('submit', function(e) {
+            e.preventDefault();
+            var phone = $('input[name="phone"]').val();
+
+            $.ajax({
+                url: 'check_user.php',
+                type: 'POST',
+                data: {
+                    phone: phone
+                },
+                success: function(response) {
+                    if (response.user_exists) {
+                        if (response.mpin) {
+                            $('form').append('<div><label>MPIN</label><input type="password" name="mpin" required></div>');
+                        } else {
+                            // Generate OTP and show OTP input
+                            $.ajax({
+                                url: 'send_otp.php',
+                                type: 'POST',
+                                data: {
+                                    phone: phone
+                                },
+                                success: function(otpResponse) {
+                                    $('form').append('<div><label>OTP</label><input type="text" name="otp" required></div>');
+                                    $('form').append('<input type="hidden" name="otp_verification" value="1">');
+                                    $('form').append('<button type="submit">Verify OTP</button>');
+                                }
+                            });
+                        }
+                    } else {
+                        $('.error').text('User does not exist').show();
+                    }
+                }
+            });
+        });
+    });
+</script> -->
 
 </html>

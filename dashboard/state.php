@@ -75,6 +75,9 @@ foreach ($summary as $row) {
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
 </head>
 
 <body>
@@ -125,7 +128,7 @@ foreach ($summary as $row) {
             </div>
         </div>
 
-        <div class="content">
+        <div class="content table-responsive">
             <h2>District Summary</h2>
             <table>
                 <thead>

@@ -216,6 +216,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?php echo $isEditing ? 'Edit' : 'Add'; ?> <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
 </head>
 
 <body>

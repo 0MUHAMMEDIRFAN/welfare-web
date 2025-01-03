@@ -82,3 +82,38 @@ function requireLogin()
         exit();
     }
 }
+
+function check_user($pdo)
+{
+    $phone = $_POST['phone'];
+    // Check if phone number exists in the database
+    $query = "SELECT id FROM users WHERE phone = ?";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([$phone]);
+    $result = $stmt->fetchColumn();
+
+    if ($result) {
+        // Phone number exists, send OTP via WhatsApp
+        $otp = rand(100000, 999999);
+        // Save OTP to the database or session
+        $_SESSION['otp'] = $otp;
+        $_SESSION['phone'] = $phone;
+
+        // Code to send OTP via WhatsApp API
+        // Example: sendWhatsAppOTP($phone, $otp);
+        $success = "OTP has been sent to your phone number.";
+        echo '<form action="verifyOtp.php" method="post">
+            <div class="form-group">
+            <label for="otp">OTP:</label>
+            <input type="text" id="otp" name="otp" required>
+            </div>
+            <div class="form-group">
+            <button type="submit" name="verify">Verify OTP</button>
+            </div>
+          </form>';
+    } else {
+        echo "<p>Phone number does not exist in our system.</p>";
+    }
+
+    $pdo = null;
+}
