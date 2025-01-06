@@ -22,7 +22,7 @@ function loadEnv($filePath)
             $value = trim($value, '"');
 
             // Store in environment variables
-            putenv("$key=$value");
+            $_ENV[$key] = $value;
         }
     }
 }
@@ -30,10 +30,10 @@ function loadEnv($filePath)
 loadEnv(dirname(__DIR__) . '/.env.local');
 
 
-$host = getenv('DB_HOST');
-$dbname = getenv('DB_NAME');
-$username = getenv('DB_USERNAME');
-$password = getenv('DB_PASSWORD');
+$host = $_ENV['DB_HOST'];
+$dbname = $_ENV['DB_NAME'];
+$username = $_ENV['DB_USERNAME'];
+$password = $_ENV['DB_PASSWORD'];
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
