@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Build query based on whether there's a parent field and type  
                 if ($table === 'localbodies') {
-                    if (!in_array($type, ['PANCHAYATH', 'MUNCIPALITY', 'CORPORATION'])) {
+                    if (!in_array($type, ['PANCHAYAT', 'MUNCIPALITY', 'CORPORATION'])) {
                         exit(json_encode(['success' => false, 'message' => 'Invalid local body type']));
                     }
 

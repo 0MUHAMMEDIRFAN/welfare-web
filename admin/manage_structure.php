@@ -338,9 +338,9 @@ try {
                                 <label for="item_type" class="form-label">Type</label>
                                 <select class="form-select" id="item_type" required>
                                     <option value="" hidden>Select Type</option>
-                                    <option value="PANCHAYAT">Panchayat</option>
-                                    <option value="MUNCIPALITY">Muncipality</option>
-                                    <option value="CORPORATION">Corporation</option>
+                                    <option value="PANCHAYAT">PANCHAYAT</option>
+                                    <option value="MUNCIPALITY">MUNCIPALITY</option>
+                                    <option value="CORPORATION">CORPORATION</option>
                                 </select>
                             </div>
                         <?php endif; ?>
