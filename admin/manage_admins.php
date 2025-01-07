@@ -249,8 +249,8 @@ try {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Admin Name</th>
-                                <th><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?></th>
+                                <th>User Name</th>
+                                <th><?php echo ucfirst($singularTableName); ?></th>
                                 <th>Phone</th>
                                 <th class="text-center" style="width: 70px;">Status</th>
                                 <th class="text-end" style="width: 130px;">Actions</th>
