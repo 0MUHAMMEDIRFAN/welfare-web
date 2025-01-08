@@ -131,10 +131,10 @@ try {
         </div>
 
         <div class="summary-cards">
-            <div class="card">
-                <h3>Total Collected</h3>
-                <p>₹<?php echo number_format($totalCollected, 2); ?></p>
-            </div>
+                        <div class="card">
+                            <h3>Total Collected</h3>
+                            <p>₹<?php echo number_format($totalCollected, 2); ?></p>
+                        </div>
             <div class="card">
                 <h3>Achievement</h3>
                 <p><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</p>

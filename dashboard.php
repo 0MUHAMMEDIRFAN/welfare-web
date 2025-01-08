@@ -1,16 +1,80 @@
 <?php
-require_once '../config/database.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once './config/database.php';
+require_once './includes/auth.php';
+require_once './includes/functions.php';
 
 requireLogin();
-if ($_SESSION['role'] != 'district_admin') {
-    header("Location: {$_SESSION['level']}.php");
-    exit();
-}
+// if ($_SESSION['role'] != 'district_admin') {
+//     header("Location: {$_SESSION['level']}.php");
+//     exit();
+// }
 
-$district_id = $_SESSION['user_level_id'];
+$adminHierarchy = [
+    'state_admin' => [
+        'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin", "collector"],
+        'table' => ['districts', "mandalams", "localbodies", "units"],
+        'table_id_field' => ["district_id", "mandalam_id", "localbody_id", "unit_id"],
+        'name_field' => 'name',
+        'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id", "unit_id"],
+        'parent_field_table' => [null, 'districts', "mandalams", "localbodies", "units"],
+        'heading' => 'State',
+        'child_heading' => 'District'
+    ],
+    'district_admin' => [
+        'manages' => ['mandalam_admin', "localbody_admin", "unit_admin", "collector"],
+        'table' => ["mandalams", "localbodies", "units"],
+        'table_id_field' => ["mandalam_id", "localbody_id", "unit_id"],
+        'name_field' => 'name',
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id", "unit_id"],
+        'parent_field_table' => ['districts', "mandalams", "localbodies", "units"],
+        'heading' => 'District',
+        'child_heading' => 'Mandalam'
+    ],
+    'mandalam_admin' => [
+        'manages' => ["localbody_admin", "unit_admin", "collector"],
+        'table' => ["localbodies", "units"],
+        'table_id_field' => ["localbody_id", "unit_id"],
+        'name_field' => 'name',
+        'parent_field' => ["mandalam_id", "localbody_id", "unit_id"],
+        'parent_field_table' => ["mandalams", "localbodies", "units"],
+        'heading' => 'Mandalam',
+        'child_heading' => 'Localbody'
+    ],
+    'localbody_admin' => [
+        'manages' => ["unit_admin", "collector"],
+        'table' => ['units'],
+        'table_id_field' => ["unit_id"],
+        'name_field' => 'name',
+        'parent_field' => ["localbody_id", "unit_id"],
+        'parent_field_table' => ["localbodies", "units"],
+        'heading' => 'Localbody',
+        'child_heading' => 'Unit'
+    ],
+    'unit_admin' => [
+        'manages' => ["collector"],
+        'table' => ["users"],
+        'table_id_field' => ["collector_id"],
+        'name_field' => 'name',
+        'parent_field' => ["unit_id"],
+        'parent_field_table' => ["units", "units"],
+        'heading' => 'Unit',
+        'child_heading' => 'Collector'
+    ]
+];
 
+$parent_id = $_SESSION['user_level_id'];
+$currentUserRole = $_SESSION['role'];
+$currentLevel = $adminHierarchy[$currentUserRole];
+$currentTable = $currentLevel['table'];
+$childTable = $currentTable[0];
+
+$currentHeading = $currentLevel['heading'];
+$childHeading = $currentLevel['child_heading'];
+
+$currentChildIdField = $currentLevel['table_id_field'][0];
+$childName = strtolower($childHeading);
+$parentTable = $currentLevel['parent_field_table'][0];
+$parentField = $currentLevel['parent_field'][0];
 
 $limit = 15; // Number of records per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -18,39 +82,58 @@ $offset = ($page - 1) * $limit;
 $totalItems = 0;
 
 try {
-    // Get district details  
-    $stmt = $pdo->prepare("SELECT name FROM districts WHERE id = ?");
-    $stmt->execute([$district_id]);
-    $district = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Get location details  
+    if ($parentTable) {
+        $stmt = $pdo->prepare("SELECT name FROM {$parentTable} WHERE id = ?");
+        $stmt->execute([$parent_id]);
+        $district = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
-    // Get mandalam summary  
+    $dynamicQuery = "";
+    $currentAlias = "dn";
+    $i = count($currentTable) - 1;
+    while ($i > 0) {
+        $table = $currentTable[$i];
+        $alias = chr(100 + $i); // Generate alias like 'd', 'e', 'f', etc.
+        $dynamicQuery .= " JOIN {$table} {$alias} ON {$currentAlias}.{$currentLevel['table_id_field'][$i]} = {$alias}.id";
+        $currentAlias = $alias;
+        $i--;
+    }
+    // Log the dynamic query for debugging
+    echo "<script>console.log('" . addslashes($dynamicQuery) . "');</script>";
+
+    // Get child org summary  
     $query = "SELECT SQL_CALC_FOUND_ROWS
-        m.id,  
-        m.name,  
-        m.target_amount,  
-        COALESCE((  
-            SELECT SUM(dn.amount)  
-            FROM donations dn  
-            JOIN units u ON dn.unit_id = u.id  
-            JOIN localbodies l ON u.localbody_id = l.id  
-            WHERE l.mandalam_id = m.id  
-            AND dn.deleted_at IS NULL  
-        ), 0) as collected_amount,  
-        COALESCE((  
-            SELECT COUNT(DISTINCT dn.id)  
-            FROM donations dn  
-            JOIN units u ON dn.unit_id = u.id  
-            JOIN localbodies l ON u.localbody_id = l.id  
-            WHERE l.mandalam_id = m.id  
-            AND dn.deleted_at IS NULL  
-        ), 0) as donation_count  
-    FROM mandalams m  
-    WHERE m.district_id = :district_id LIMIT :limit OFFSET :offset";
+    d.id,  
+    d.name,  
+    d." . ($currentHeading === "Unit" ? "phone" : "target_amount") . ",  
+    COALESCE((  
+        SELECT SUM(dn.amount)
+        FROM donations dn
+        {$dynamicQuery}
+        WHERE {$currentAlias}.{$currentChildIdField} = d.id
+        AND dn.deleted_at IS NULL
+    ), 0) as collected_amount,
+    COALESCE((  
+        SELECT COUNT(DISTINCT dn.id)
+        FROM donations dn
+        {$dynamicQuery}
+        WHERE {$currentAlias}.{$currentChildIdField} = d.id
+        AND dn.deleted_at IS NULL
+    ), 0) as donation_count
+    FROM {$childTable} d";
+
+    if ($parentField) {
+        $query .= " WHERE d.{$parentField} = :parent_id";
+    }
+    $query .= " LIMIT :limit OFFSET :offset";
 
     $stmt = $pdo->prepare($query);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-    $stmt->bindValue(':district_id', $district_id, PDO::PARAM_INT);
+    if ($parentField) {
+        $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
+    }
     $stmt->execute();
     $summary = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -62,7 +145,9 @@ try {
     $totalCollected = 0;
     $totalDonations = 0;
     foreach ($summary as $row) {
-        $totalTarget += $row['target_amount'];
+        if ($currentHeading != "Unit") {
+            $totalTarget += $row['target_amount'];
+        }
         $totalCollected += $row['collected_amount'];
         $totalDonations += $row['donation_count'];
     }
@@ -75,8 +160,8 @@ try {
 <html>
 
 <head>
-    <title>District Admin Dashboard</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <title><?php echo $currentHeading; ?> Admin Dashboard</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -87,17 +172,17 @@ try {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#">District Admin Dashboard</a>
+            <a class="navbar-brand" href="#"><?php echo $currentHeading; ?> Admin Dashboard</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../admin/resetMpin.php">Reset Mpin</a>
+                        <a class="nav-link" href="./admin/resetMpin.php">Reset Mpin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../logout.php">Logout</a>
+                        <a class="nav-link" href="./logout.php">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -107,18 +192,23 @@ try {
     <div class="dashboard">
         <div class="header">
             <p class="d-flex flex-wrap gap-1">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
-                (<?php echo htmlspecialchars($district['name']); ?> District)</p>
+                <?php if ($parentTable) {
+                    echo '(' . htmlspecialchars($district['name']) . ' ' . $currentHeading . ')';
+                } ?>
+            </p>
             <p class="d-flex gap-2 flex-wrap justify-content-end">
-                <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
-                <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
+                <a href="./admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
+                <a href="./admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>
 
         <div class="summary-cards">
-            <div class="card">
-                <h3>Total Target</h3>
-                <p>₹<?php echo number_format($totalTarget, 2); ?></p>
-            </div>
+            <?php if ($currentHeading != "Unit"): ?>
+                <div class="card">
+                    <h3>Total Target</h3>
+                    <p>₹<?php echo number_format($totalTarget, 2); ?></p>
+                </div>
+            <?php endif; ?>
             <div class="card">
                 <h3>Total Collected</h3>
                 <p>₹<?php echo number_format($totalCollected, 2); ?></p>
@@ -134,14 +224,21 @@ try {
         </div>
 
         <div class="content table-responsive">
-            <h2>Mandalam Summary</h2>
+            <h2><?php echo $childHeading; ?> Summary</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Mandalam</th>
-                        <th>Target Amount</th>
+                        <th>ID</th>
+                        <th><?php echo $childHeading; ?></th>
+                        <?php if ($currentHeading != "Unit"): ?>
+                            <th>Target Amount</th>
+                        <?php else: ?>
+                            <th>Phone</th>
+                        <?php endif; ?>
                         <th>Collected Amount</th>
-                        <th>Achievement</th>
+                        <?php if ($currentHeading != "Unit"): ?>
+                            <th>Achievement</th>
+                        <?php endif; ?>
                         <th class="d-none d-lg-table-cell">Persons Donated</th>
                         <th>Actions</th>
                     </tr>
@@ -154,27 +251,34 @@ try {
                     <?php else: ?>
                         <?php foreach ($summary as $row): ?>
                             <tr>
+                                <td><?php echo htmlspecialchars($row['id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['name']); ?></td>
-                                <td>
-                                    ₹<?php echo number_format($row['target_amount'], 2); ?>
-                                    <button class="btn btn-sm btn-warning edit-target"
-                                        data-id="<?php echo $row['id']; ?>"
-                                        data-target="<?php echo $row['target_amount']; ?>">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                </td>
+                                <?php if ($currentHeading != "Unit"): ?>
+                                    <td>
+                                        ₹<?php echo number_format($row['target_amount'], 2); ?>
+                                        <button class="btn btn-sm btn-warning edit-target"
+                                            data-id="<?php echo $row['id']; ?>"
+                                            data-target="<?php echo $row['target_amount']; ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                <?php else: ?>
+                                    <td><?php echo htmlspecialchars($row['phone']); ?></td>
+                                <?php endif; ?>
                                 <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                                <td>
-                                    <?php
-                                    $percentage = $row['target_amount'] > 0
-                                        ? ($row['collected_amount'] / $row['target_amount']) * 100
-                                        : 0;
-                                    echo number_format($percentage, 2) . '%';
-                                    ?>
-                                </td>
+                                <?php if ($currentHeading != "Unit"): ?>
+                                    <td>
+                                        <?php
+                                        $percentage = $row['target_amount'] > 0
+                                            ? ($row['collected_amount'] / $row['target_amount']) * 100
+                                            : 0;
+                                        echo number_format($percentage, 2) . '%';
+                                        ?>
+                                    </td>
+                                <?php endif; ?>
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
-                                    <a href="view_details.php?level=mandalam&id=<?php echo $row['id']; ?>"
+                                    <a href="./dashboard/view_details.php?level=<?php echo $childName; ?>&id=<?php echo $row['id']; ?>"
                                         class="btn btn-view">View Details</a>
                                 </td>
                             </tr>

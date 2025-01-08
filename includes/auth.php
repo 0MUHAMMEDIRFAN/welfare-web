@@ -68,6 +68,8 @@ function login($phone, $mpin, $pdo)
         } else {
             return ['status' => false, 'message' => 'Invalid Credentials'];
         }
+    } else {
+        return ['status' => false, 'message' => 'User not found'];
     }
     return ['status' => false, 'message' => 'Invalid Credentials'];
 }
@@ -87,7 +89,7 @@ function logout()
 function requireLogin()
 {
     if (!isLoggedIn()) {
-        header('Location: ../index.php');  // Added ../ to fix path  
+        header('Location: ./index.php');  // Added ../ to fix path  
         exit();
     }
 }

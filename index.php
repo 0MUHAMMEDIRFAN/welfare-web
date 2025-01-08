@@ -8,6 +8,9 @@ if (isLoggedIn()) {
         case 'state_admin':
             header('Location: dashboard/state.php');
             break;
+        case 'district_admin':
+            header('Location: dashboard/district.php');
+            break;
         case 'mandalam_admin':
             header('Location: dashboard/mandalam.php');
             break;

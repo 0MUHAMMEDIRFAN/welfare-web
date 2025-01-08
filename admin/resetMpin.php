@@ -100,7 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                             <div class="mb-3">
                                 <label for="new_mpin" class="form-label">New MPIN</label>
-                                <input type="password" id="new_mpin" name="new_mpin" class="form-control" pattern="\d{4,6}" minlength="4" maxlength="6" required>
+                                <div class="input-container m-0">
+                                    <input type="password" id="new_mpin" name="new_mpin" class="form-control" pattern="\d{4}|\d{6}" minlength="4" maxlength="6" required oninvalid="this.setCustomValidity('MPIN must be 4 or 6 digits.')" oninput="this.setCustomValidity('')">
+                                    <span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span>
+                                </div>
+                                <div class="form-text">MPIN must be 4 or 6 digits.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="verify_mpin" class="form-label">Verify MPIN</label>
@@ -116,6 +120,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
     <style>
+        .input-container {
+            position: relative;
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+
         .error {
             color: #dc3545;
             padding: 10px;
@@ -175,5 +191,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     </style>
 </body>
+<script>
+    function togglePasswordVisibility() {
+        var input = document.getElementById("new_mpin");
+        if (input.type === "password") {
+            input.type = "text";
+        } else {
+            input.type = "password";
+        }
+    }
+</script>
 
 </html>

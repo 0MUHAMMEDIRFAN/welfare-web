@@ -192,7 +192,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         response = JSON.parse(response)
                         if (response.status == 200) {
                             isotpsent = true;
-                            $('form .submit-button').before('<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container"><input type="password" id="new_mpin" name="new_mpin" pattern="\d{4,6}" minlength="4" maxlength="6" required><span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span></div></div>');
+                            $('form .submit-button').before(`<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container m-0"><input type="password" id="new_mpin" name="new_mpin" pattern="\\d{4}|\\d{6}" minlength="4" maxlength="6" oninvalid="this.setCustomValidity('MPIN must be 4 or 6 digits.')" oninput="this.setCustomValidity('')" required><span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span></div><div class="form-text">MPIN must be 4 or 6 digits.</div></div>`);
                             $('#success').html(response.message).removeClass('d-none');
                         } else {
                             $('#error').removeClass('d-none').html(response.message);
