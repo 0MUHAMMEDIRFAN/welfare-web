@@ -339,7 +339,7 @@ try {
                                 <select class="form-select" id="item_type" required>
                                     <option value="" hidden>Select Type</option>
                                     <option value="PANCHAYAT">PANCHAYAT</option>
-                                    <option value="MUNCIPALITY">MUNCIPALITY</option>
+                                    <option value="MUNICIPALITY">MUNICIPALITY</option>
                                     <option value="CORPORATION">CORPORATION</option>
                                 </select>
                             </div>
