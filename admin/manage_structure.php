@@ -85,11 +85,25 @@ $offset = ($page - 1) * $limit;
 $totalItems = 0;
 // Get items to manage based on admin level  
 try {
+    // Handle search functionality
+    $search = isset($_GET['search']) ? $_GET['search'] : '';
+    if ($search) {
+        $searchQuery = " AND t.name LIKE :search";
+        $searchParam = '%' . $search . '%';
+    } else {
+        $searchQuery = '';
+        $searchParam = '';
+    }
+
     if ($parentField) {
         if (!$mainField) {
             $query = "SELECT SQL_CALC_FOUND_ROWS t.*, p.name as parent_name FROM {$currentTable} t 
-              LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id ORDER BY t.id LIMIT :limit OFFSET :offset";
+              LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
+              WHERE 1=1 $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
             $stmt = $pdo->prepare($query);
+            if ($search) {
+                $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
+            }
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
@@ -97,9 +111,12 @@ try {
         } else {
             $query = "SELECT SQL_CALC_FOUND_ROWS t.*, p.name as parent_name FROM {$currentTable} t 
           LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
-          WHERE t.$mainField = :parent_id ORDER BY t.id LIMIT :limit OFFSET :offset";
+          WHERE t.$mainField = :parent_id $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
             $stmt = $pdo->prepare($query);
             $stmt->bindParam(':parent_id', $_SESSION['user_level_id'], PDO::PARAM_INT);
+            if ($search) {
+                $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
+            }
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
@@ -108,8 +125,11 @@ try {
             $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
         }
     } else {
-        $query = "SELECT SQL_CALC_FOUND_ROWS * FROM {$currentTable} ORDER BY id LIMIT :limit OFFSET :offset";
+        $query = "SELECT SQL_CALC_FOUND_ROWS * FROM {$currentTable} WHERE 1=1 $searchQuery ORDER BY id LIMIT :limit OFFSET :offset";
         $stmt = $pdo->prepare($query);
+        if ($search) {
+            $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
+        }
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -153,7 +173,7 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../dashboard/<?php echo $_SESSION['level']; ?>.php">Dashboard</a>
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
@@ -178,8 +198,30 @@ try {
                 <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
             <?php endif; ?>
             <p class="">
-                <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a>
+                <a href="../dashboard/dashboard.php" class="btn btn-secondary">← Back</a>
+                <!-- <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a> -->
             </p>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-end gap-1">
+            <form method="GET" class="mb3 d-flex flex-wrap gap-1 justify-content-between align-items-center">
+                <input type="hidden" name="type" value="<?php echo htmlspecialchars($managingRole); ?>">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Search..." value="<?php echo htmlspecialchars($search); ?>">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+                <!-- <div class="input-group">
+                    <label class="input-group-text" for="sort">Sort by:</label>
+                    <select class="form-select" name="sort" id="sort" onchange="this.form.submit()">
+                        <option value="name" <?php echo $sortField === 'name' ? 'selected' : ''; ?>>Name</option>
+                        <option value="admin_created_at" <?php echo $sortField === 'admin_created_at' ? 'selected' : ''; ?>>Created At</option>
+                    </select>
+                    <select class="form-select" name="order" onchange="this.form.submit()">
+                        <option value="asc" <?php echo $sortOrder === 'ASC' ? 'selected' : ''; ?>>Ascending</option>
+                        <option value="desc" <?php echo $sortOrder === 'DESC' ? 'selected' : ''; ?>>Descending</option>
+                    </select>
+                </div> -->
+            </form>
         </div>
 
         <div class="card mb-4">
@@ -258,7 +300,7 @@ try {
                                         <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                             <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                             <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                     ← Prev
                                                 </a>
                                                 <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -268,7 +310,7 @@ try {
                                                         </option>
                                                     <?php endfor; ?>
                                                 </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                     Next →
                                                 </a>
                                             </div>

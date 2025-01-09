@@ -180,6 +180,9 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
                     </li>
                 </ul>
@@ -188,7 +191,7 @@ try {
     </nav>
     <div class="dashboard">
         <div class="header">
-            <h2><?php echo htmlspecialchars($details['name']); ?> <?php echo ucfirst($level); ?> Details</h2>
+            <h2><?php echo htmlspecialchars($details['name']); ?> <?php echo ucfirst($level); ?></h2>
             <p>
                 <!-- <a href="<?php echo $currentLevelPerm['parent'] ? './view_details.php?level=' . $currentLevelPerm['parent'] . '&id=' . $id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-secondary">← Back</a> -->
                 <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
@@ -251,7 +254,7 @@ try {
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Total Collections</th>
-                                <th>Total Collected</th>
+                                <th>Collected</th>
                                 <th>Actions</th>
                             <?php endif; ?>
                         </tr>

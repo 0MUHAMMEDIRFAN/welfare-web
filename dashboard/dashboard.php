@@ -1,7 +1,7 @@
 <?php
-require_once './config/database.php';
-require_once './includes/auth.php';
-require_once './includes/functions.php';
+require_once '../config/database.php';
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
 
 requireLogin();
 // if ($_SESSION['role'] != 'district_admin') {
@@ -56,7 +56,7 @@ $adminHierarchy = [
         'table_id_field' => ["collector_id"],
         'name_field' => 'name',
         'parent_field' => ["unit_id"],
-        'parent_field_table' => ["units", "units"],
+        'parent_field_table' => ["units"],
         'heading' => 'Unit',
         'child_heading' => 'Collector'
     ]
@@ -84,9 +84,41 @@ $totalItems = 0;
 try {
     // Get location details  
     if ($parentTable) {
-        $stmt = $pdo->prepare("SELECT name FROM {$parentTable} WHERE id = ?");
+        if ($currentHeading == "District") {
+            $stmt = $pdo->prepare("SELECT name as district_name FROM {$parentTable} WHERE id = ?");
+        } else if ($currentHeading == "Mandalam") {
+            $stmt = $pdo->prepare("SELECT
+                m.name as mandalam_name, 
+                d.name as district_name   
+            FROM mandalams m   
+            JOIN districts d ON m.district_id = d.id   
+            WHERE m.id = ? ");
+        } else if ($currentHeading == "Localbody") {
+            $stmt = $pdo->prepare("SELECT 
+                l.name as localbody_name,  
+                m.name as mandalam_name,  
+                d.name as district_name  
+            FROM localbodies l  
+            JOIN mandalams m ON l.mandalam_id = m.id  
+            JOIN districts d ON m.district_id = d.id  
+            WHERE l.id = ?  
+    ");
+        } else if ($currentHeading == "Unit") {
+            $stmt = $pdo->prepare("SELECT   
+                u.name as unit_name,  
+                l.name as localbody_name,  
+                m.name as mandalam_name,  
+                d.name as district_name,
+                u.target_amount as unit_target_amount
+            FROM units u  
+            JOIN localbodies l ON u.localbody_id = l.id  
+            JOIN mandalams m ON l.mandalam_id = m.id  
+            JOIN districts d ON m.district_id = d.id  
+            WHERE u.id = ?  
+        ");
+        }
         $stmt->execute([$parent_id]);
-        $district = $stmt->fetch(PDO::FETCH_ASSOC);
+        $location = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     $dynamicQuery = "";
@@ -140,17 +172,60 @@ try {
     // Get total items count for pagination
     $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 
-    // Calculate totals  
-    $totalTarget = 0;
+    // Calculate totals
+    $totalTarget = $currentHeading == "Unit" ? $location['unit_target_amount'] : 0;
     $totalCollected = 0;
+    $totalCollectedToday = 0;
     $totalDonations = 0;
-    foreach ($summary as $row) {
-        if ($currentHeading != "Unit") {
-            $totalTarget += $row['target_amount'];
+
+    // Query to get total target amount
+    if ($currentHeading != "Unit") {
+        $totalTargetQuery = "SELECT SUM(target_amount) as total_target FROM {$childTable}";
+        if ($parentField) {
+            $totalTargetQuery .= " WHERE {$parentField} = :parent_id";
         }
-        $totalCollected += $row['collected_amount'];
-        $totalDonations += $row['donation_count'];
+        $stmt = $pdo->prepare($totalTargetQuery);
+        if ($parentField) {
+            $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        $totalTarget = $stmt->fetchColumn();
     }
+
+    // Query to get total collected amount and total donations
+    $totalCollectedQuery = "SELECT
+        COALESCE(SUM(dn.amount), 0) as total_collected,
+        COALESCE(COUNT(DISTINCT dn.id), 0) as total_donations
+    FROM donations dn
+    {$dynamicQuery}
+    WHERE dn.deleted_at IS NULL";
+    if ($parentField) {
+        $totalCollectedQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+    }
+    $stmt = $pdo->prepare($totalCollectedQuery);
+    if ($parentField) {
+        $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
+    }
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $totalCollected = $result['total_collected'];
+    $totalDonations = $result['total_donations'];
+
+    // Query to get total collected amount today
+    $totalCollectedTodayQuery = "SELECT
+        COALESCE(SUM(dn.amount), 0) as total_collected_today
+            FROM donations dn
+            {$dynamicQuery}
+            WHERE dn.deleted_at IS NULL AND DATE(dn.created_at) = CURDATE()";
+    if ($parentField) {
+        $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+    }
+    $stmt = $pdo->prepare($totalCollectedTodayQuery);
+    if ($parentField) {
+        $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
+    }
+    $stmt->execute();
+    $totalCollectedToday = $stmt->fetchColumn();
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
@@ -161,7 +236,7 @@ try {
 
 <head>
     <title><?php echo $currentHeading; ?> Admin Dashboard</title>
-    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -179,10 +254,10 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="./admin/resetMpin.php">Reset Mpin</a>
+                        <a class="nav-link" href="../admin/resetMpin.php">Reset Mpin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="./logout.php">Logout</a>
+                        <a class="nav-link" href="../logout.php">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -191,34 +266,51 @@ try {
 
     <div class="dashboard">
         <div class="header">
-            <p class="d-flex flex-wrap gap-1">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
-                <?php if ($parentTable) {
-                    echo '(' . htmlspecialchars($district['name']) . ' ' . $currentHeading . ')';
-                } ?>
-            </p>
+            <div class="d-flex flex-column flex-wrap">
+                <p class="d-flex flex-wrap gap-1 m-0">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong></p>
+                <p class="d-flex flex-wrap gap-1">
+
+                    <?php
+                    if ($currentHeading == "District") {
+                        echo '( ' . htmlspecialchars($location['district_name']) . ' District )';
+                    } else if ($currentHeading == "Mandalam") {
+                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam )';
+                    } else if ($currentHeading == "Localbody") {
+                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
+                        echo ', ' . htmlspecialchars($location['localbody_name']) . ' Localbody )';
+                    } else if ($currentHeading == "Unit") {
+                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
+                        echo ', ' . htmlspecialchars($location['localbody_name']) . ' Localbody';
+                        echo ', ' . htmlspecialchars($location['unit_name']) . ' Unit )';
+                    }
+                    ?>
+                </p>
+            </div>
             <p class="d-flex gap-2 flex-wrap justify-content-end">
-                <a href="./admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
-                <a href="./admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
+                <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
+                <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
             </p>
         </div>
 
         <div class="summary-cards">
-            <?php if ($currentHeading != "Unit"): ?>
-                <div class="card">
-                    <h3>Total Target</h3>
-                    <p>₹<?php echo number_format($totalTarget, 2); ?></p>
-                </div>
-            <?php endif; ?>
+            <div class="card">
+                <h3>Total Target</h3>
+                <p>₹<?php echo ($currentHeading == "Unit") ? "" : number_format($totalTarget, 2); ?></p>
+            </div>
             <div class="card">
                 <h3>Total Collected</h3>
                 <p>₹<?php echo number_format($totalCollected, 2); ?></p>
+                <h6 class="">(<?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%)</h6>
             </div>
             <div class="card">
-                <h3>Achievement</h3>
-                <p><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</p>
+                <h3>Collected Today</h3>
+                <p>₹<?php echo number_format($totalCollectedToday, 2); ?></p>
             </div>
             <div class="card">
-                <h3>Persons Donated</h3>
+                <h3>Total Donations</h3>
                 <p><?php echo number_format($totalDonations); ?></p>
             </div>
         </div>
@@ -235,11 +327,13 @@ try {
                         <?php else: ?>
                             <th>Phone</th>
                         <?php endif; ?>
-                        <th>Collected Amount</th>
-                        <?php if ($currentHeading != "Unit"): ?>
-                            <th>Achievement</th>
-                        <?php endif; ?>
-                        <th class="d-none d-lg-table-cell">Persons Donated</th>
+                        <th>
+                            Collected Amount
+                            <?php if ($currentHeading != "Unit"): ?>
+                            <?php endif; ?>
+                        </th>
+                        <!-- <th>Collected Today</th> -->
+                        <th class="d-none d-lg-table-cell">Donations</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -265,20 +359,20 @@ try {
                                 <?php else: ?>
                                     <td><?php echo htmlspecialchars($row['phone']); ?></td>
                                 <?php endif; ?>
-                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?></td>
-                                <?php if ($currentHeading != "Unit"): ?>
-                                    <td>
+                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?>
+                                    <?php if ($currentHeading != "Unit"): ?>
                                         <?php
                                         $percentage = $row['target_amount'] > 0
                                             ? ($row['collected_amount'] / $row['target_amount']) * 100
                                             : 0;
-                                        echo number_format($percentage, 2) . '%';
+                                        echo ' (' . number_format($percentage, 2) . '%)';
                                         ?>
-                                    </td>
-                                <?php endif; ?>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- <td><?php echo htmlspecialchars($row['today_collected']); ?></td> -->
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
-                                    <a href="./dashboard/view_details.php?level=<?php echo $childName; ?>&id=<?php echo $row['id']; ?>"
+                                    <a href="./view_details.php?level=<?php echo $childName; ?>&id=<?php echo $row['id']; ?>"
                                         class="btn btn-view">View Details</a>
                                 </td>
                             </tr>
@@ -308,6 +402,30 @@ try {
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+    <!-- Target Amount Edit Modal -->
+    <div class="modal fade" id="editTargetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Target Amount</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTargetForm">
+                        <input type="hidden" id="entity_id">
+                        <div class="mb-3">
+                            <label for="target_amount" class="form-label">Target Amount</label>
+                            <input type="number" class="form-control" id="target_amount" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -418,30 +536,7 @@ try {
             font-weight: 600;
         }
     </style>
-    <!-- Target Amount Edit Modal -->
-    <div class="modal fade" id="editTargetModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Target Amount</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editTargetForm">
-                        <input type="hidden" id="entity_id">
-                        <div class="mb-3">
-                            <label for="target_amount" class="form-label">Target Amount</label>
-                            <input type="number" class="form-control" id="target_amount" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
     <!-- Add Bootstrap JS and jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -459,7 +554,8 @@ try {
             });
 
             // Save target amount  
-            $('#saveTargetBtn').click(function() {
+            $('#editTargetForm').submit(function(event) {
+                event.preventDefault()
                 const entityId = $('#entity_id').val();
                 const targetAmount = $('#target_amount').val();
 

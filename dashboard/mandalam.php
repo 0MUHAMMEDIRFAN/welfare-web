@@ -18,8 +18,7 @@ $totalItems = 0;
 
 try {
     // Get mandalam and district details  
-    $stmt = $pdo->prepare("  
-    SELECT m.name as mandalam_name, d.name as district_name   
+    $stmt = $pdo->prepare("SELECT m.name as mandalam_name, d.name as district_name   
     FROM mandalams m   
     JOIN districts d ON m.district_id = d.id   
     WHERE m.id = ?  

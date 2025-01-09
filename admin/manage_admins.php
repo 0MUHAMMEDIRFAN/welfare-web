@@ -3,22 +3,22 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
-// Ensure user is logged in  
+// Ensure user is logged in
 requireLogin();
 
-// Helper function to get singular form of table name  
+// Helper function to get singular form of table name
 function getSingularForm($tableName)
 {
     $irregularPlurals = [
         'localbodies' => 'localbody',
     ];
-    // Check if it's an irregular plural  
+    // Check if it's an irregular plural
     if (isset($irregularPlurals[$tableName])) {
         return $irregularPlurals[$tableName];
     }
     return rtrim($tableName, 's');
 }
-// Define admin hierarchy and their manageable levels  
+// Define admin hierarchy and their manageable levels
 $adminHierarchy = [
     'state_admin' => [
         'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin", "collector"],
@@ -53,7 +53,7 @@ if (!isset($currentLevel)) {
     die("Unauthorized access");
 }
 
-// Get the level being managed  
+// Get the level being managed
 $managingRole = '';
 if (isset($_GET['type']) && in_array($_GET['type'], $currentLevel['manages'])) {
     $managingRole = $_GET['type'];
@@ -75,30 +75,30 @@ $totalItems = 0;
 
 
 // if ($currentUserRole === 'localbody_admin') {
-//     // $managingRole = isset($_GET['type']) && $_GET['type'] === 'collector' ? 'collector' : 'unit_admin';
+// // $managingRole = isset($_GET['type']) && $_GET['type'] === 'collector' ? 'collector' : 'unit_admin';
 // } else {
-//     $managingRole = $currentLevel['manages'];
+// $managingRole = $currentLevel['manages'];
 // }
 
-// Handle MPIN update  
+// Handle MPIN update
 // if (isset($_POST['update_mpin'])) {
-//     try {
-//         if (!preg_match("/^\d{4,6}$/", $_POST['new_mpin'])) {
-//             throw new Exception("MPIN must be 4-6 digits");
-//         }
-//         $stmt = $pdo->prepare("UPDATE users SET mpin = ?, updated_at = NOW() WHERE id = ? AND role = ?");
-//         $stmt->execute([
-//             password_hash($_POST['new_mpin'], PASSWORD_DEFAULT),
-//             $_POST['admin_id'],
-//             $managingRole
-//         ]);
-//         $success_message = "MPIN updated successfully";
-//     } catch (Exception $e) {
-//         $error_message = $e->getMessage();
-//     }
+// try {
+// if (!preg_match("/^\d{4,6}$/", $_POST['new_mpin'])) {
+// throw new Exception("MPIN must be 4-6 digits");
+// }
+// $stmt = $pdo->prepare("UPDATE users SET mpin = ?, updated_at = NOW() WHERE id = ? AND role = ?");
+// $stmt->execute([
+// password_hash($_POST['new_mpin'], PASSWORD_DEFAULT),
+// $_POST['admin_id'],
+// $managingRole
+// ]);
+// $success_message = "MPIN updated successfully";
+// } catch (Exception $e) {
+// $error_message = $e->getMessage();
+// }
 // }
 
-// Handle status toggle  
+// Handle status toggle
 if (isset($_POST['toggle_status'])) {
     try {
         $stmt = $pdo->prepare("UPDATE users SET is_active = ?, updated_at = NOW() WHERE id = ? AND role = ?");
@@ -113,43 +113,38 @@ if (isset($_POST['toggle_status'])) {
     }
 }
 
-// Get places with their admins  
+// Get places with their admins
 try {
-    // $query = "SELECT p.*,   
-    //                  u.id as admin_id,   
-    //                  u.name as admin_name,   
-    //                  u.phone as admin_phone,   
-    //                  u.is_active,  
-    //                  u.created_at as admin_created_at  
-    //           FROM {$currentTable} p
-    //           LEFT JOIN users u ON u.{$singularTableName}_id = p.id   
-    //                            AND u.role = ? ";
+    $search = isset($_GET['search']) ? $_GET['search'] : '';
+    // $sortField = isset($_GET['sort']) ? $_GET['sort'] : 'name';
+    // $sortOrder = isset($_GET['order']) && strtolower($_GET['order']) === 'desc' ? 'DESC' : 'ASC';
 
-    $query = "SELECT SQL_CALC_FOUND_ROWS u.id as admin_id,   
-                     u.name as admin_name,   
-                     u.phone as admin_phone,   
-                     u.is_active,  
-                     u.created_at as admin_created_at,  
-                     u.role,
-                     u.district_id,
-                     u.mandalam_id,
-                     u.localbody_id,
-                     u.unit_id,
-                     u.{$singularTableName}_id as id,
-                     p.name as name
-                FROM users u 
-                LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id 
-                WHERE u.role = :role";
+    $query = "SELECT SQL_CALC_FOUND_ROWS u.id as admin_id,
+        u.name as admin_name,
+        u.phone as admin_phone,
+        u.is_active,
+        u.created_at as admin_created_at,
+        u.role,
+        u.district_id,
+        u.mandalam_id,
+        u.localbody_id,
+        u.unit_id,
+        u.{$singularTableName}_id as id,
+        p.name as name
+        FROM users u
+        LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id
+        WHERE u.role = :role";
 
     if ($mainField) {
         $query .= " AND p.{$mainField} = :user_level_id";
     }
+
+    if (!empty($search)) {
+        $query .= " AND (u.name LIKE :search OR p.name LIKE :search)";
+    }
+
+    // $query .= " ORDER BY {$sortField} {$sortOrder}";
     $query .= " LIMIT :limit OFFSET :offset";
-
-
-    // --   FROM {$currentTable} p
-    //   LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id AND u.role = ? ";
-    // $query .= " ORDER BY p.{$currentLevel['name_field']}";
 
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':role', $managingRole, PDO::PARAM_STR);
@@ -158,10 +153,13 @@ try {
     if ($mainField) {
         $stmt->bindParam(':user_level_id', $_SESSION['user_level_id'], PDO::PARAM_INT);
     }
+    if (!empty($search)) {
+        $searchParam = "%{$search}%";
+        $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
+    }
     $stmt->execute();
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
-    // echo "<script>console.log(" . json_encode($items) . ")</script>";
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -199,7 +197,7 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../dashboard/<?php echo $_SESSION['level']; ?>.php">Dashboard</a>
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
@@ -219,7 +217,7 @@ try {
         <?php endif; ?>
         <div class="header">
             <?php if (count($currentLevel['manages']) > 1): ?>
-                <div class="mb-3 d-flex gap-1 flex-wrap">
+                <div class="d-flex gap-1 flex-wrap">
                     <?php foreach ($currentLevel['manages'] as $role): ?>
                         <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
                             <span class="d-none d-lg-inline"><?php echo ucfirst(str_replace('_', ' ', $role)); ?>s</span>
@@ -229,9 +227,30 @@ try {
                 </div>
             <?php endif; ?>
 
-            <p>
-                <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class=" btn btn-secondary">← Back</a>
+            <p class="m-0">
+                <a href="../dashboard/dashboard.php" class=" btn btn-secondary">← Back</a>
             </p>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-end gap-1">
+            <form method="GET" class="mb3 d-flex flex-wrap gap-1 justify-content-between align-items-center">
+                <input type="hidden" name="type" value="<?php echo htmlspecialchars($managingRole); ?>">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Search..." value="<?php echo htmlspecialchars($search); ?>">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+                <!-- <div class="input-group">
+                    <label class="input-group-text" for="sort">Sort by:</label>
+                    <select class="form-select" name="sort" id="sort" onchange="this.form.submit()">
+                        <option value="name" <?php echo $sortField === 'name' ? 'selected' : ''; ?>>Name</option>
+                        <option value="admin_created_at" <?php echo $sortField === 'admin_created_at' ? 'selected' : ''; ?>>Created At</option>
+                    </select>
+                    <select class="form-select" name="order" onchange="this.form.submit()">
+                        <option value="asc" <?php echo $sortOrder === 'ASC' ? 'selected' : ''; ?>>Ascending</option>
+                        <option value="desc" <?php echo $sortOrder === 'DESC' ? 'selected' : ''; ?>>Descending</option>
+                    </select>
+                </div> -->
+            </form>
         </div>
 
         <div class="card">
@@ -252,6 +271,7 @@ try {
                                 <th>User Name</th>
                                 <th><?php echo ucfirst($singularTableName); ?></th>
                                 <th>Phone</th>
+                                <th>createdAt</th>
                                 <th class="text-center" style="width: 70px;">Status</th>
                                 <th class="text-end" style="width: 130px;">Actions</th>
                             </tr>
@@ -268,6 +288,7 @@ try {
                                         <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
                                         <td><?php echo htmlspecialchars($place['name']); ?></td>
                                         <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
+                                        <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_created_at']) : '-'; ?></td>
                                         <td class="text-center" style="width: 40px;">
                                             <?php if ($place['admin_id']): ?>
                                                 <span class="badge <?php echo $place['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
@@ -311,7 +332,7 @@ try {
                                         <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                             <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                             <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                     ← Prev
                                                 </a>
                                                 <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -321,7 +342,7 @@ try {
                                                         </option>
                                                     <?php endfor; ?>
                                                 </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                     Next →
                                                 </a>
                                             </div>

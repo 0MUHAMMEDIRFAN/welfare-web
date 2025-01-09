@@ -6,19 +6,19 @@ require_once 'includes/auth.php';
 if (isLoggedIn()) {
     switch ($_SESSION['role']) {
         case 'state_admin':
-            header('Location: dashboard/state.php');
+            header('Location: dashboard/dashboard.php');
             break;
         case 'district_admin':
-            header('Location: dashboard/district.php');
+            header('Location: dashboard/dashboard.php');
             break;
         case 'mandalam_admin':
-            header('Location: dashboard/mandalam.php');
+            header('Location: dashboard/dashboard.php');
             break;
         case 'localbody_admin':
-            header('Location: dashboard/localbody.php');
+            header('Location: dashboard/dashboard.php');
             break;
         case 'unit_admin':
-            header('Location: dashboard/unit.php');
+            header('Location: dashboard/dashboard.php');
             break;
         default:
             // If role is unknown, logout  

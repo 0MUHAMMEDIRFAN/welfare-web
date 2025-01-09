@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../dashboard/<?php echo $_SESSION['level']; ?>.php">Dashboard</a>
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
@@ -267,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="mb-3">
                                 <label class="form-label">Phone</label>
-                                <input type="text" name="phone" class="form-control" required pattern="\d{10}"
+                                <input type="text" name="phone" class="form-control" required minlength="10" maxlength="10" pattern="\d{10}"
                                     value="<?php echo $isEditing ? htmlspecialchars($adminData['phone']) : ''; ?>">
                                 <div class="invalid-feedback">Valid 10-digit phone number is required</div>
                             </div>
@@ -319,7 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $i++;
                             }
                             ?>
-<!-- 
+                            <!-- 
                             <div class="mb-3">
                                 <label class="form-label"><?php echo $isEditing ? 'New MPIN (leave blank to keep current)' : 'MPIN'; ?></label>
                                 <input type="password" name="mpin" class="form-control"

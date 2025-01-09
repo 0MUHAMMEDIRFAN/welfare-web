@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Verify current MPIN
         if (!password_verify($currentMpin, $dbMpin)) {
+        // if (false) {
             $error = "Current MPIN is incorrect.";
         } else {
 
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="../dashboard/<?php echo $_SESSION['level']; ?>.php">Dashboard</a>
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>

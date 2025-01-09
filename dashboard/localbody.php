@@ -19,9 +19,7 @@ $totalItems = 0;
 
 try {
     // Get location details  
-    $stmt = $pdo->prepare("  
-        SELECT   
-            l.name as localbody_name,  
+    $stmt = $pdo->prepare("SELECT l.name as localbody_name,  
             m.name as mandalam_name,  
             d.name as district_name  
         FROM localbodies l  

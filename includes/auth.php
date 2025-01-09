@@ -26,6 +26,7 @@ function login($phone, $mpin, $pdo)
         if (!$user['mpin']) {
             return ['status' => false, 'message' => "This User has not set mpin <h6><a href='./admin/newMpin.php'>SET NEW MPIN</a></h6>"];
         } else if (password_verify($mpin, $user['mpin'])) {
+        // } else if (true) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['name'] = $user['name'];
@@ -36,27 +37,27 @@ function login($phone, $mpin, $pdo)
                 case 'state_admin':
                     $_SESSION['level'] = 'state';
                     $_SESSION['user_level_id'] = 1;
-                    header('Location: dashboard/state.php');
+                    header('Location: dashboard/dashboard.php');
                     break;
                 case 'district_admin':
                     $_SESSION['level'] = 'district';
                     $_SESSION['user_level_id'] = $user['district_id'];
-                    header('Location: dashboard/district.php');
+                    header('Location: dashboard/dashboard.php');
                     break;
                 case 'mandalam_admin':
                     $_SESSION['level'] = 'mandalam';
                     $_SESSION['user_level_id'] = $user['mandalam_id'];
-                    header('Location: dashboard/mandalam.php');
+                    header('Location: dashboard/dashboard.php');
                     break;
                 case 'localbody_admin':
                     $_SESSION['level'] = 'localbody';
                     $_SESSION['user_level_id'] = $user['localbody_id'];
-                    header('Location: dashboard/localbody.php');
+                    header('Location: dashboard/dashboard.php');
                     break;
                 case 'unit_admin':
                     $_SESSION['level'] = 'unit';
                     $_SESSION['user_level_id'] = $user['unit_id'];
-                    header('Location: dashboard/unit.php');
+                    header('Location: dashboard/dashboard.php');
                     break;
                 case 'collector':
                     return ['status' => false, 'message' => 'Collector Login Restricted!'];
