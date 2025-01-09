@@ -90,7 +90,7 @@ function logout()
 function requireLogin()
 {
     if (!isLoggedIn()) {
-        header('Location: ./index.php');  // Added ../ to fix path  
+        header('Location: ../index.php');  // Added ../ to fix path  
         exit();
     }
 }

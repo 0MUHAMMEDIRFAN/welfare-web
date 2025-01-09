@@ -101,8 +101,7 @@ try {
             FROM localbodies l  
             JOIN mandalams m ON l.mandalam_id = m.id  
             JOIN districts d ON m.district_id = d.id  
-            WHERE l.id = ?  
-    ");
+            WHERE l.id = ? ");
         } else if ($currentHeading == "Unit") {
             $stmt = $pdo->prepare("SELECT   
                 u.name as unit_name,  
@@ -132,7 +131,7 @@ try {
         $i--;
     }
     // Log the dynamic query for debugging
-    echo "<script>console.log('" . addslashes($dynamicQuery) . "');</script>";
+    // echo "<script>console.log('" . addslashes($dynamicQuery) . "');</script>";
 
     // Get child org summary  
     $query = "SELECT SQL_CALC_FOUND_ROWS
@@ -157,6 +156,9 @@ try {
 
     if ($parentField) {
         $query .= " WHERE d.{$parentField} = :parent_id";
+        if ($parentField == "unit_id") {
+            $query .= " AND d.role = 'collector'";
+        }
     }
     $query .= " LIMIT :limit OFFSET :offset";
 
@@ -196,11 +198,17 @@ try {
     $totalCollectedQuery = "SELECT
         COALESCE(SUM(dn.amount), 0) as total_collected,
         COALESCE(COUNT(DISTINCT dn.id), 0) as total_donations
-    FROM donations dn
-    {$dynamicQuery}
-    WHERE dn.deleted_at IS NULL";
+            FROM donations dn
+            JOIN units u ON dn.unit_id = u.id  
+            -- {$dynamicQuery}
+            WHERE dn.deleted_at IS NULL";
     if ($parentField) {
-        $totalCollectedQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+        if ($parentField == "unit_id") {
+            $totalCollectedQuery .= " AND u.id = :parent_id";
+        } else {
+            $totalCollectedQuery .= " AND u.{$parentField} = :parent_id";
+        }
+        // $totalCollectedQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
     }
     $stmt = $pdo->prepare($totalCollectedQuery);
     if ($parentField) {
@@ -215,10 +223,16 @@ try {
     $totalCollectedTodayQuery = "SELECT
         COALESCE(SUM(dn.amount), 0) as total_collected_today
             FROM donations dn
-            {$dynamicQuery}
+            JOIN units u ON dn.unit_id = u.id  
+            -- {$dynamicQuery}
             WHERE dn.deleted_at IS NULL AND DATE(dn.created_at) = CURDATE()";
     if ($parentField) {
-        $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+        if ($parentField == "unit_id") {
+            $totalCollectedTodayQuery .= " AND u.id = :parent_id";
+        } else {
+            $totalCollectedTodayQuery .= " AND u.{$parentField} = :parent_id";
+        }
+        // $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
     }
     $stmt = $pdo->prepare($totalCollectedTodayQuery);
     if ($parentField) {
@@ -290,15 +304,20 @@ try {
                 </p>
             </div>
             <p class="d-flex gap-2 flex-wrap justify-content-end">
-                <a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
-                <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>
+                <?php if ($currentHeading == "Unit") {
+                    echo '<a href="../admin/manage_collectors.php" class="btn btn-manage">Manage Collectors</a>';
+                } else {
+                    echo '<a href="../admin/manage_structure.php?level=mandalam" class="btn btn-manage">Manage Organizations</a>
+                          <a href="../admin/manage_admins.php?level=mandalam" class="btn btn-manage">Manage Admins</a>';
+                }
+                ?>
             </p>
         </div>
 
         <div class="summary-cards">
             <div class="card">
                 <h3>Total Target</h3>
-                <p>₹<?php echo ($currentHeading == "Unit") ? "" : number_format($totalTarget, 2); ?></p>
+                <p>₹<?php echo ($currentHeading == "Unit") ? $location["unit_target_amount"] : number_format($totalTarget, 2); ?></p>
             </div>
             <div class="card">
                 <h3>Total Collected</h3>
@@ -372,7 +391,7 @@ try {
                                 <!-- <td><?php echo htmlspecialchars($row['today_collected']); ?></td> -->
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
-                                    <a href="./view_details.php?level=<?php echo $childName; ?>&id=<?php echo $row['id']; ?>"
+                                    <a href="./view_details.php?level=<?php echo $currentHeading == "Unit" ? "unit" : $childName; ?>&id=<?php echo $currentHeading == "Unit" ? $parent_id . "&colid=" . $row['id'] : $row['id']; ?>"
                                         class="btn btn-view">View Details</a>
                                 </td>
                             </tr>

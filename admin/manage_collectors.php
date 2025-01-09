@@ -192,7 +192,7 @@ try {
         <div class="header">
             <h2>Manage Collectors</h2>
             <p>
-                <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a>
+                <a href="../dashboard/dashboard.php" class="btn btn-secondary">← Back</a>
             </p>
         </div>
 
