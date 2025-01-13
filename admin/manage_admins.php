@@ -135,6 +135,22 @@ try {
         LEFT JOIN {$currentTable} p ON u.{$singularTableName}_id = p.id
         WHERE u.role = :role";
 
+    // if (isset($_GET['district']) && !empty($_GET['district'])) {
+    //     $query .= " AND u.district_id = :district_id";
+    // }
+
+    // if (isset($_GET['mandalam']) && !empty($_GET['mandalam'])) {
+    //     $query .= " AND u.mandalam_id = :mandalam_id";
+    // }
+
+    // if (isset($_GET['localbody']) && !empty($_GET['localbody'])) {
+    //     $query .= " AND u.localbody_id = :localbody_id";
+    // }
+
+    // if (isset($_GET['unit']) && !empty($_GET['unit'])) {
+    //     $query .= " AND u.unit_id = :unit_id";
+    // }
+
     if ($mainField) {
         $query .= " AND p.{$mainField} = :user_level_id";
     }

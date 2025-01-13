@@ -50,7 +50,7 @@ $adminHierarchy = [
 ];
 
 // Get current admin's level and what they can manage  
-$adminData = null;
+$placeData = null;
 $currentUserRole = $_SESSION['role'];
 $currentLevel = $adminHierarchy[$currentUserRole];
 $currentManages = $currentLevel['manages'];
@@ -83,24 +83,52 @@ $limit = 10; // Number of records per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 $totalItems = 0;
-// Get items to manage based on admin level  
+
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Filter options
+$filterOptions = [];
+if (isset($_GET['localbody']) && in_array('localbody_admin', $currentManages)) {
+    $filterOptions['localbody_id'] = $_GET['localbody'];
+} else if (isset($_GET['mandalam']) && in_array('mandalam_admin', $currentManages)) {
+    $filterOptions['mandalam_id'] = $_GET['mandalam'];
+} else if (isset($_GET['district']) && in_array('district_admin', $currentManages)) {
+    $filterOptions['district_id'] = $_GET['district'];
+}
+
+// Build filter query
+$filterQuery = '';
+$filterParams = '';
+$filteredText = "";
+foreach ($filterOptions as $field => $value) {
+    $fieldText =  str_replace('_id', '', $field);
+    $filterQuery .= " AND t.$field = :$field";
+    $filterParams .= "&$fieldText=$value";
+    $filteredText = "Filtered By $fieldText";
+}
+
+// Prepare and execute query with filters
 try {
     // Handle search functionality
-    $search = isset($_GET['search']) ? $_GET['search'] : '';
     if ($search) {
         $searchQuery = " AND t.name LIKE :search";
         $searchParam = '%' . $search . '%';
+        $searchParams = "&search=$search";
     } else {
         $searchQuery = '';
         $searchParam = '';
+        $searchParams = '';
     }
 
     if ($parentField) {
         if (!$mainField) {
             $query = "SELECT SQL_CALC_FOUND_ROWS t.*, p.name as parent_name FROM {$currentTable} t 
-              LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
-              WHERE 1=1 $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
+                      LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
+                      WHERE 1=1 $filterQuery $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
             $stmt = $pdo->prepare($query);
+            foreach ($filterOptions as $field => $value) {
+                $stmt->bindParam(":$field", $value, PDO::PARAM_INT);
+            }
             if ($search) {
                 $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
             }
@@ -110,23 +138,29 @@ try {
             $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
         } else {
             $query = "SELECT SQL_CALC_FOUND_ROWS t.*, p.name as parent_name FROM {$currentTable} t 
-          LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
-          WHERE t.$mainField = :parent_id $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
+                      LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
+                      WHERE t.$mainField = :parent_id $filterQuery $searchQuery 
+                      ORDER BY t.id 
+                      LIMIT :limit OFFSET :offset";
             $stmt = $pdo->prepare($query);
             $stmt->bindParam(':parent_id', $_SESSION['user_level_id'], PDO::PARAM_INT);
+            foreach ($filterOptions as $field => $value) {
+                $stmt->bindParam(":$field", $value, PDO::PARAM_INT);
+            }
             if ($search) {
                 $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
             }
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
-
-            // Get total count of items
             $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
         }
     } else {
-        $query = "SELECT SQL_CALC_FOUND_ROWS * FROM {$currentTable} WHERE 1=1 $searchQuery ORDER BY id LIMIT :limit OFFSET :offset";
+        $query = "SELECT SQL_CALC_FOUND_ROWS * FROM {$currentTable} t WHERE 1=1 $filterQuery $searchQuery ORDER BY id LIMIT :limit OFFSET :offset";
         $stmt = $pdo->prepare($query);
+        foreach ($filterOptions as $field => $value) {
+            $stmt->bindParam(":$field", $value, PDO::PARAM_INT);
+        }
         if ($search) {
             $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
         }
@@ -139,6 +173,7 @@ try {
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -152,15 +187,6 @@ try {
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <style>
-        .table td {
-            vertical-align: middle;
-        }
-
-        .action-buttons {
-            white-space: nowrap;
-        }
-    </style>
 </head>
 
 <body>
@@ -203,24 +229,19 @@ try {
             </p>
         </div>
 
-        <div class="d-flex flex-wrap justify-content-end gap-1">
-            <form method="GET" class="mb3 d-flex flex-wrap gap-1 justify-content-between align-items-center">
+        <div class="mb-3 d-flex flex-wrap justify-content-end gap-1">
+            <?php if ($filteredText): ?>
+                <a href="?type=<?php echo $managingRole; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
+            <?php endif; ?>
+            <?php if (array_search($managingRole, $currentManages) > 0): ?>
+                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal">Filter Table</button>
+            <?php endif; ?>
+            <form method="GET" class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
                 <input type="hidden" name="type" value="<?php echo htmlspecialchars($managingRole); ?>">
-                <div class="input-group">
+                <div class="input-group w-auto m-0">
                     <input type="text" name="search" class="form-control" placeholder="Search..." value="<?php echo htmlspecialchars($search); ?>">
                     <button type="submit" class="btn btn-primary">Search</button>
                 </div>
-                <!-- <div class="input-group">
-                    <label class="input-group-text" for="sort">Sort by:</label>
-                    <select class="form-select" name="sort" id="sort" onchange="this.form.submit()">
-                        <option value="name" <?php echo $sortField === 'name' ? 'selected' : ''; ?>>Name</option>
-                        <option value="admin_created_at" <?php echo $sortField === 'admin_created_at' ? 'selected' : ''; ?>>Created At</option>
-                    </select>
-                    <select class="form-select" name="order" onchange="this.form.submit()">
-                        <option value="asc" <?php echo $sortOrder === 'ASC' ? 'selected' : ''; ?>>Ascending</option>
-                        <option value="desc" <?php echo $sortOrder === 'DESC' ? 'selected' : ''; ?>>Descending</option>
-                    </select>
-                </div> -->
             </form>
         </div>
 
@@ -300,17 +321,17 @@ try {
                                         <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                             <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                             <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                     ← Prev
                                                 </a>
                                                 <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
                                                     <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
                                                             Page <?php echo $i; ?>
                                                         </option>
                                                     <?php endfor; ?>
                                                 </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                     Next →
                                                 </a>
                                             </div>
@@ -365,7 +386,7 @@ try {
                                     $stmt = $pdo->query($query);
                                 }
                                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                    $selected = $row['id'] == $placeData['id'] ? 'selected' : '';
+                                    $selected =  '';
                                     echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
                                 }
                             }
@@ -436,12 +457,12 @@ try {
                             if ($mainParentField) {
                                 $query .= " AND {$mainParentField} = ?";
                                 $stmt = $pdo->prepare($query);
-                                $stmt->execute([$adminData[$mainParentField]]);
+                                $stmt->execute([$placeData[$mainParentField]]);
                             } else {
                                 $stmt = $pdo->query($query);
                             }
                             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                $selected = $row['id'] == $adminData[str_replace('_admin', '', $currentManages[$i]) . "_id"] ? 'selected' : '';
+                                $selected = $row['id'] == $placeData[str_replace('_admin', '', $currentManages[$i]) . "_id"] ? 'selected' : '';
                                 echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
                             }
                             echo '</select>
@@ -464,6 +485,90 @@ try {
             </div>
         </div>
     </div>
+
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Filter <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="filterLoadingSpinner" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <form id="filterForm">
+                        <!-- <div class="mb-3">
+                            <label for="item_name" class="form-label"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?> Name</label>
+                            <input type="text" class="form-control" id="item_name" required>
+                        </div> -->
+
+                        <?php
+                        $i = 0;
+                        while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
+                            $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
+                            echo '<div class="mb-3">
+                            <label class="form-label">' . $mainName . '</label>
+                                <select name="' . strtolower($mainName) . '" id="filter_' . $mainName . '" class="form-control" ' . ($i == 0 ? "required" : "") . '>
+                                    <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
+                            if ($i == 0) {
+                                $mainTable = $mainTables[$i];
+                                $mainParentField = $mainParentFields[$i];
+                                $query = "SELECT id, name FROM {$mainTable} WHERE 1";
+                                if ($mainParentField) {
+                                    $query .= " AND {$mainParentField} = ?";
+                                    $stmt = $pdo->prepare($query);
+                                    $stmt->execute([$_SESSION['user_level_id']]);
+                                } else {
+                                    $stmt = $pdo->query($query);
+                                }
+                                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                    $selected = '';
+                                    echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
+                                }
+                            }
+                            echo '</select>
+                                <div class="invalid-feedback">' . $mainName . ' is required</div>
+                            </div>';
+                            $i++;
+                        }
+                        ?>
+                        <!-- <?php if ($canManage === 'localbody_admin'): ?>
+                            <div class="mb-3">
+                                <label for="item_type" class="form-label">Type</label>
+                                <select class="form-select" id="item_type" required>
+                                    <option value="" hidden>Select Type</option>
+                                    <option value="PANCHAYAT">PANCHAYAT</option>
+                                    <option value="MUNICIPALITY">MUNICIPALITY</option>
+                                    <option value="CORPORATION">CORPORATION</option>
+                                </select>
+                            </div>
+                        <?php endif; ?> -->
+                        <!-- <div class="mb-3">
+                            <label for="item_target" class="form-label">Target Amount</label>
+                            <input type="number" class="form-control" id="item_target" required>
+                        </div> -->
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveFilterBtn">Submit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        .table td {
+            vertical-align: middle;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+    </style>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -511,14 +616,13 @@ try {
                     $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 }
             });
-
             $('#item_Mandalam').change(function() {
                 if ($(this).val()) {
                     $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
                     loadLocalbodies($(this).val()).then((response) => {
                         let localbodies = JSON.parse(response);
                         let options = '<option value="" hidden>Select Localbody</option>';
-                        if (localbodies) {
+                        if (localbodies.length) {
                             localbodies.forEach(function(localbody) {
                                 options += `<option value="${localbody.id}">${localbody.name}</option>`;
                             });
@@ -533,6 +637,7 @@ try {
                     $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 }
             });
+
             $('#edit_item_District').change(async function() {
                 var districtId = $(this).val();
                 if (districtId) {
@@ -557,7 +662,6 @@ try {
                     $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 }
             });
-
             $('#edit_item_Mandalam').change(function() {
                 if ($(this).val()) {
                     loadLocalbodies($(this).val()).then((response) => {
@@ -577,6 +681,53 @@ try {
                     });
                 } else {
                     $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#filter_District').change(async function() {
+                var districtId = $(this).val();
+                if (districtId) {
+                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                    loadMandalams(districtId).then((response) => {
+                        let mandalams = JSON.parse(response);
+                        let options = '<option value="" hidden>Select Mandalam</option>';
+                        if (mandalams.length) {
+                            mandalams.forEach(function(mandalam) {
+                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                        }
+                        $('#filter_Mandalam').html(options);
+                    }).catch((error) => {
+                        $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                    });
+                } else {
+                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                }
+            });
+
+            $('#filter_Mandalam').change(function() {
+                if ($(this).val()) {
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
+                    loadLocalbodies($(this).val()).then((response) => {
+                        let localbodies = JSON.parse(response);
+                        let options = '<option value="" hidden>Select Localbody</option>';
+                        if (localbodies.length) {
+                            localbodies.forEach(function(localbody) {
+                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                        }
+                        $('#filter_Localbody').html(options);
+                    }).catch((error) => {
+                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                    });
+                } else {
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 }
             });
 
@@ -843,6 +994,111 @@ try {
                         }
                     });
                 }
+            });
+
+            // Filter Table
+            $('#filterForm').submit(function(event) {
+                event.preventDefault();
+                // const name = $('#item_name').val();
+                // const target = $('#item_target').val();
+                const $btn = $("#saveFilterBtn");
+
+                // Get type if it's a local body  
+                // const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
+
+                // if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
+                //     alert('Please fill all fields');
+                //     return;
+                // }
+                const formData = $(this).serializeArray();
+                const url = new URL(window.location.href);
+                const params = new URLSearchParams(url.search);
+
+                formData.forEach(field => {
+                    if (field.value) {
+                        params.set(field.name, field.value);
+                    } else {
+                        params.delete(field.name);
+                    }
+                });
+
+                window.location.href = `${url.pathname}?${params.toString()}`;
+                // console.log(`${url.pathname}?${params.toString()}`);
+
+                showLoading('filterForm', 'filterLoadingSpinner');
+                $btn.prop('disabled', true);
+
+
+                // const url = new URL(window.location.href);
+                // const params = new URLSearchParams(url.search);
+                // params.set('mandalam', 'hi');
+                // window.location.href = `${url.pathname}?${params.toString()}`;
+
+                // const data = {
+                //     action: 'add',
+                //     name: name,
+                //     target_amount: target,
+                //     level: currentLevel,
+                //     table: currentTable
+                // };
+                //     if (currentLevel === MainLevel) {
+                //         data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                //         data.parent_field = '<?php echo $parentField; ?>';
+                //     } else if (currentLevel === 'mandalam_admin') {
+                //         const district = $('#item_District').val();
+                //         if (!district) {
+                //             alert('Please select a district');
+                //             return;
+                //         }
+                //         data.parent_id = district;
+                //         data.parent_field = "district_id";
+                //     } else if (currentLevel === 'localbody_admin') {
+                //         const mandalam = $('#item_Mandalam').val();
+                //         if (!mandalam) {
+                //             alert('Please select a mandalam');
+                //             return;
+                //         }
+                //         data.parent_id = mandalam;
+                //         data.parent_field = "mandalam_id";
+                //     } else if (currentLevel === 'unit_admin') {
+                //         const localbody = $('#item_Localbody').val();
+                //         if (!localbody) {
+                //             alert('Please select a localbody');
+                //             return;
+                //         }
+                //         data.parent_id = localbody;
+                //         data.parent_field = "localbody_id";
+                //     }
+                //     // Add type if it's a local body  
+                //     if (currentLevel === 'localbody_admin') {
+                //         data.type = type;
+                //     }
+
+                //     $.ajax({
+                //         url: 'ajax/ajax_manage_structure.php',
+                //         method: 'POST',
+                //         dataType: 'json',
+                //         data: data,
+                //         success: function(response) {
+                //             if (response.success) {
+                //                 location.href = '?type=<?php echo $managingRole; ?>';
+                //             } else {
+                //                 alert('Error: ' + (response.message || 'Unknown error'));
+                //             }
+                //         },
+                //         error: function(xhr, status, error) {
+                //             console.log('AJAX Error:', {
+                //                 status: status,
+                //                 error: error,
+                //                 response: xhr.responseText
+                //             });
+                //             alert('Error adding item. Please check console for details.');
+                //         },
+                //         complete: function() {
+                //             hideLoading('addItemForm', 'addLoadingSpinner');
+                //             $btn.prop('disabled', false);
+                //         }
+                //     });
             });
 
             function loadMandalams(districtId) {
