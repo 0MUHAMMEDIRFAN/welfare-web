@@ -574,6 +574,28 @@ try {
                 }
             });
 
+            $('#filter_Localbody').change(function() {
+                if ($(this).val()) {
+                    $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Loading Units...</option>');
+                    loadUnits($(this).val()).then((response) => {
+                        let units = JSON.parse(response);
+                        let options = '<option value="" hidden>Select Unit</option>';
+                        if (units.length) {
+                            units.forEach(function(unit) {
+                                options += `<option value="${unit.id}">${unit.name}</option>`;
+                            });
+                        } else {
+                            options += `<option value="" disabled>No Units Under This Localbody</option>`
+                        }
+                        $('#filter_Unit').html(options);
+                    }).catch((error) => {
+                        $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Error Loading Units</option>');
+                    });
+                } else {
+                    $('#filter_Unit').html('<option value="" hidden>Select Unit</option>');
+                }
+            });
+
             // Filter Table
             $('#filterForm').submit(function(event) {
                 event.preventDefault();
@@ -635,6 +657,24 @@ try {
                         method: 'GET',
                         data: {
                             mandalam_id: mandalamId
+                        },
+                        success: function(response) {
+                            resolve(response);
+                        },
+                        error: function(xhr, status, error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+
+            function loadUnits(localbodyId) {
+                return new Promise((resolve, reject) => {
+                    $.ajax({
+                        url: 'ajax/get_units.php',
+                        method: 'GET',
+                        data: {
+                            localbody_id: localbodyId
                         },
                         success: function(response) {
                             resolve(response);
