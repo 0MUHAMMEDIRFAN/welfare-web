@@ -124,7 +124,9 @@ try {
         if (!$mainField) {
             $query = "SELECT SQL_CALC_FOUND_ROWS t.*, p.name as parent_name FROM {$currentTable} t 
                       LEFT JOIN {$parentFieldTable} p ON t.$parentField = p.id 
-                      WHERE 1=1 $filterQuery $searchQuery ORDER BY t.id LIMIT :limit OFFSET :offset";
+                      WHERE 1=1 $filterQuery $searchQuery 
+                      ORDER BY t.id 
+                      LIMIT :limit OFFSET :offset";
             $stmt = $pdo->prepare($query);
             foreach ($filterOptions as $field => $value) {
                 $stmt->bindParam(":$field", $value, PDO::PARAM_INT);
@@ -234,7 +236,7 @@ try {
                 <a href="?type=<?php echo $managingRole; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
             <?php endif; ?>
             <?php if (array_search($managingRole, $currentManages) > 0): ?>
-                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal">Filter Table</button>
+                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fa-solid fa-list"></i> Filter Table</button>
             <?php endif; ?>
             <form method="GET" class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
                 <input type="hidden" name="type" value="<?php echo htmlspecialchars($managingRole); ?>">
@@ -560,6 +562,7 @@ try {
             </div>
         </div>
     </div>
+
     <style>
         .table td {
             vertical-align: middle;
@@ -1029,76 +1032,6 @@ try {
                 $btn.prop('disabled', true);
 
 
-                // const url = new URL(window.location.href);
-                // const params = new URLSearchParams(url.search);
-                // params.set('mandalam', 'hi');
-                // window.location.href = `${url.pathname}?${params.toString()}`;
-
-                // const data = {
-                //     action: 'add',
-                //     name: name,
-                //     target_amount: target,
-                //     level: currentLevel,
-                //     table: currentTable
-                // };
-                //     if (currentLevel === MainLevel) {
-                //         data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
-                //         data.parent_field = '<?php echo $parentField; ?>';
-                //     } else if (currentLevel === 'mandalam_admin') {
-                //         const district = $('#item_District').val();
-                //         if (!district) {
-                //             alert('Please select a district');
-                //             return;
-                //         }
-                //         data.parent_id = district;
-                //         data.parent_field = "district_id";
-                //     } else if (currentLevel === 'localbody_admin') {
-                //         const mandalam = $('#item_Mandalam').val();
-                //         if (!mandalam) {
-                //             alert('Please select a mandalam');
-                //             return;
-                //         }
-                //         data.parent_id = mandalam;
-                //         data.parent_field = "mandalam_id";
-                //     } else if (currentLevel === 'unit_admin') {
-                //         const localbody = $('#item_Localbody').val();
-                //         if (!localbody) {
-                //             alert('Please select a localbody');
-                //             return;
-                //         }
-                //         data.parent_id = localbody;
-                //         data.parent_field = "localbody_id";
-                //     }
-                //     // Add type if it's a local body  
-                //     if (currentLevel === 'localbody_admin') {
-                //         data.type = type;
-                //     }
-
-                //     $.ajax({
-                //         url: 'ajax/ajax_manage_structure.php',
-                //         method: 'POST',
-                //         dataType: 'json',
-                //         data: data,
-                //         success: function(response) {
-                //             if (response.success) {
-                //                 location.href = '?type=<?php echo $managingRole; ?>';
-                //             } else {
-                //                 alert('Error: ' + (response.message || 'Unknown error'));
-                //             }
-                //         },
-                //         error: function(xhr, status, error) {
-                //             console.log('AJAX Error:', {
-                //                 status: status,
-                //                 error: error,
-                //                 response: xhr.responseText
-                //             });
-                //             alert('Error adding item. Please check console for details.');
-                //         },
-                //         complete: function() {
-                //             hideLoading('addItemForm', 'addLoadingSpinner');
-                //             $btn.prop('disabled', false);
-                //         }
-                //     });
             });
 
             function loadMandalams(districtId) {
