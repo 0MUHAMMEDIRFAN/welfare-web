@@ -379,17 +379,17 @@ try {
                                         <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                             <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                             <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                     ← Prev
                                                 </a>
                                                 <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
                                                     <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
                                                             Page <?php echo $i; ?>
                                                         </option>
                                                     <?php endfor; ?>
                                                 </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>&search=<?php echo htmlspecialchars($search); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                     Next →
                                                 </a>
                                             </div>
@@ -607,7 +607,7 @@ try {
                 $btn.prop('disabled', true);
 
 
-                
+
             });
 
             function loadMandalams(districtId) {
