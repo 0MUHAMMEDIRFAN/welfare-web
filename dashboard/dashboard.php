@@ -176,7 +176,7 @@ try {
 
     // Calculate totals
     $totalTarget = $currentHeading == "Unit" ? $location['unit_target_amount'] : 0;
-    $totalCollected = 0;
+    $totalCollectedMobile = 0;
     $totalCollectedToday = 0;
     $totalDonations = 0;
 
@@ -194,9 +194,11 @@ try {
         $totalTarget = $stmt->fetchColumn();
     }
 
-    // Query to get total collected amount and total donations
-    $totalCollectedQuery = "SELECT
-        COALESCE(SUM(dn.amount), 0) as total_collected,
+    // Query to get total collected amount from mobile and total donations via mobile
+    $totalCollectedMobileQuery = "SELECT
+        COALESCE(SUM(dn.amount), 0) as total_collected_mobile,
+        COALESCE(SUM(CASE WHEN dn.payment_type = 'CASH' THEN dn.amount END), 0) as total_cash_collected,
+        COALESCE(SUM(CASE WHEN dn.payment_type != 'CASH' THEN dn.amount END), 0) as total_online_collected,
         COALESCE(COUNT(DISTINCT dn.id), 0) as total_donations
             FROM donations dn
             JOIN units u ON dn.unit_id = u.id  
@@ -204,42 +206,64 @@ try {
             WHERE dn.deleted_at IS NULL";
     if ($parentField) {
         if ($parentField == "unit_id") {
-            $totalCollectedQuery .= " AND u.id = :parent_id";
+            $totalCollectedMobileQuery .= " AND u.id = :parent_id";
         } else {
-            $totalCollectedQuery .= " AND u.{$parentField} = :parent_id";
+            $totalCollectedMobileQuery .= " AND u.{$parentField} = :parent_id";
         }
-        // $totalCollectedQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+        // $totalCollectedMobileQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
     }
-    $stmt = $pdo->prepare($totalCollectedQuery);
+    $stmt = $pdo->prepare($totalCollectedMobileQuery);
     if ($parentField) {
         $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
     }
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $totalCollected = $result['total_collected'];
+    $totalCollectedMobile = $result['total_collected_mobile'];
+    $totalCashCollected = $result['total_cash_collected'];
+    $totalOnlineCollected = $result['total_online_collected'];
     $totalDonations = $result['total_donations'];
 
-    // Query to get total collected amount today
-    $totalCollectedTodayQuery = "SELECT
-        COALESCE(SUM(dn.amount), 0) as total_collected_today
-            FROM donations dn
-            JOIN units u ON dn.unit_id = u.id  
-            -- {$dynamicQuery}
-            WHERE dn.deleted_at IS NULL AND DATE(dn.created_at) = CURDATE()";
+    // Query to get total collected amount from paper
+    $totalCollectedPaperQuery = "SELECT
+        COALESCE(SUM(cr.amount), 0) as total_collected_paper
+            FROM collection_reports cr
+            JOIN units u ON cr.unit_id = u.id";
     if ($parentField) {
         if ($parentField == "unit_id") {
-            $totalCollectedTodayQuery .= " AND u.id = :parent_id";
+            $totalCollectedPaperQuery .= " WHERE u.id = :parent_id";
         } else {
-            $totalCollectedTodayQuery .= " AND u.{$parentField} = :parent_id";
+            $totalCollectedPaperQuery .= " WHERE u.{$parentField} = :parent_id";
         }
-        // $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
     }
-    $stmt = $pdo->prepare($totalCollectedTodayQuery);
+    $stmt = $pdo->prepare($totalCollectedPaperQuery);
     if ($parentField) {
         $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
     }
     $stmt->execute();
-    $totalCollectedToday = $stmt->fetchColumn();
+    $totalCollectedPaper = $stmt->fetchColumn();
+    $totalCollected = $totalCollectedMobile + $totalCollectedPaper;
+
+    // Query to get total collected amount today
+    // $totalCollectedTodayQuery = "SELECT
+    //     COALESCE(SUM(dn.amount), 0) as total_collected_today
+    //         FROM donations dn
+    //         JOIN units u ON dn.unit_id = u.id  
+    //         -- {$dynamicQuery}
+    //         WHERE dn.deleted_at IS NULL AND DATE(dn.created_at) = CURDATE()";
+    // if ($parentField) {
+    //     if ($parentField == "unit_id") {
+    //         $totalCollectedTodayQuery .= " AND u.id = :parent_id";
+    //     } else {
+    //         $totalCollectedTodayQuery .= " AND u.{$parentField} = :parent_id";
+    //     }
+    //     // $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
+    // }
+    // $stmt = $pdo->prepare($totalCollectedTodayQuery);
+    // if ($parentField) {
+    //     $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
+    // }
+    // $stmt->execute();
+    // $totalCollectedToday = $stmt->fetchColumn();
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
@@ -316,21 +340,51 @@ try {
 
         <div class="summary-cards">
             <div class="card">
-                <h3>Total Target</h3>
+                <h3>Target</h3>
                 <p>₹<?php echo ($currentHeading == "Unit") ? $location["unit_target_amount"] : number_format($totalTarget, 2); ?></p>
             </div>
             <div class="card">
-                <h3>Total Collected</h3>
+                <h3>Total Collection</h3>
                 <p>₹<?php echo number_format($totalCollected, 2); ?></p>
-                <h6 class="">(<?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%)</h6>
             </div>
             <div class="card">
-                <h3>Collected Today</h3>
-                <p>₹<?php echo number_format($totalCollectedToday, 2); ?></p>
+                <h3>Percentage</h3>
+                <p><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</p>
+                <!-- <h6 class="">(<?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%)</h6> -->
             </div>
             <div class="card">
-                <h3>Total Donations</h3>
+                <h3>Donors</h3>
                 <p><?php echo number_format($totalDonations); ?></p>
+            </div>
+        </div>
+        <h5 class="text-center mb-3">Collected Through Application</h5>
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Online</h3>
+                <p>₹<?php echo number_format($totalOnlineCollected, 2); ?></p>
+            </div>
+            <div class="card">
+                <h3>Offline</h3>
+                <p>₹<?php echo number_format($totalCashCollected, 2); ?></p>
+            </div>
+            <div class="card">
+                <h3>Total</h3>
+                <p>₹<?php echo number_format($totalCollectedMobile, 2); ?></p>
+            </div>
+            <div class="card">
+                <h3>Donors</h3>
+                <p><?php echo number_format($totalDonations); ?></p>
+            </div>
+        </div>
+        <h5 class="text-center mb-3">Collected Through Coupons</h5>
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total</h3>
+                <p>₹<?php echo number_format($totalCollectedPaper, 2); ?></p>
+            </div>
+            <div class="card">
+                <h3>Donors</h3>
+                <p>-</p>
             </div>
         </div>
 
@@ -391,8 +445,8 @@ try {
                                 <!-- <td><?php echo htmlspecialchars($row['today_collected']); ?></td> -->
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                                 <td>
-                                    <a href="./view_details.php?level=<?php echo $currentHeading == "Unit" ? "unit" : $childName; ?>&id=<?php echo $currentHeading == "Unit" ? $parent_id . "&colid=" . $row['id'] : $row['id']; ?>"
-                                        class="btn btn-view">View Details</a>
+                                    <a href="../reports/view_reports.php?level=<?php echo $currentHeading == "Unit" ? "unit" : $childName; ?>&id=<?php echo $currentHeading == "Unit" ? $parent_id . "&colid=" . $row['id'] : $row['id']; ?>"
+                                        class="btn btn-view"><i class="fa-regular fa-newspaper"></i> Report</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

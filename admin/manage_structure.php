@@ -607,7 +607,7 @@ try {
                                 options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
                         }
                         $('#item_Mandalam').html(options);
                     }).catch((error) => {
@@ -630,7 +630,7 @@ try {
                                 options += `<option value="${localbody.id}">${localbody.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
                         }
                         $('#item_Localbody').html(options);
                     }).catch((error) => {
@@ -653,7 +653,7 @@ try {
                                 options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
                         }
                         $('#edit_item_Mandalam').html(options);
                     }).catch((error) => {
@@ -676,7 +676,7 @@ try {
                                 options += `<option value="${localbody.id}">${localbody.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
                         }
                         $('#edit_item_Localbody').html(options);
                     }).catch((error) => {
@@ -699,7 +699,7 @@ try {
                                 options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Mandalams Under This District</option>`
+                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
                         }
                         $('#filter_Mandalam').html(options);
                     }).catch((error) => {
@@ -723,7 +723,7 @@ try {
                                 options += `<option value="${localbody.id}">${localbody.name}</option>`;
                             });
                         } else {
-                            options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
                         }
                         $('#filter_Localbody').html(options);
                     }).catch((error) => {

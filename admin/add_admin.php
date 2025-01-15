@@ -386,7 +386,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
                                 });
                             } else {
-                                options += `<option value="" disabled>No Mandalams Under This district</option>`
+                                options += `<option value="" disabled>No Mandalams Under Selected district</option>`
                             }
                             $('#item_Mandalam').html(options);
                         },
@@ -418,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     options += `<option value="${localbody.id}">${localbody.name}</option>`;
                                 });
                             } else {
-                                options += `<option value="" disabled>No Localbodies Under This Mandalam</option>`
+                                options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
                             }
                             $('#item_Localbody').html(options);
                         },
@@ -449,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     options += `<option value="${unit.id}">${unit.name}</option>`;
                                 });
                             } else {
-                                options += `<option value="" disabled>No Units Under This Localbody</option>`
+                                options += `<option value="" disabled>No Units Under Selected Localbody</option>`
                             }
                             $('#item_Unit').html(options);
                         },
