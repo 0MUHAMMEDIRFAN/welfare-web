@@ -88,3 +88,8 @@ a:hover {
 .table-info-row {
     /* border-bottom: 0px !important; */
 }
+
+.table-clickable-row:hover {
+    background-color: lightgrey;
+    cursor: pointer;
+}

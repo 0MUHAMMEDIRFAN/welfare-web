@@ -60,7 +60,7 @@ function login($phone, $mpin, $pdo)
                     header('Location: dashboard/dashboard.php');
                     break;
                 case 'collector':
-                    return ['status' => false, 'message' => 'Collector Login Restricted!'];
+                    return ['status' => false, 'message' => 'Login For Collectors Restricted!'];
                     break;
                 default:
                     return ['status' => false, 'message' => 'This user is not Allowed! Contact Admin'];

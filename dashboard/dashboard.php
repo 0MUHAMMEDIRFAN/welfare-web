@@ -144,7 +144,13 @@ try {
         {$dynamicQuery}
         WHERE {$currentAlias}.{$currentChildIdField} = d.id
         AND dn.deleted_at IS NULL
-    ), 0) as collected_amount,
+    ), 0) as collected_amount_app,
+    COALESCE((  
+        SELECT SUM(dn.amount)
+        FROM collection_reports dn
+        {$dynamicQuery}
+        WHERE {$currentAlias}.{$currentChildIdField} = d.id
+    ), 0) as collected_amount_coupon,
     COALESCE((  
         SELECT COUNT(DISTINCT dn.id)
         FROM donations dn
@@ -306,23 +312,23 @@ try {
         <div class="header">
             <div class="d-flex flex-column flex-wrap">
                 <p class="d-flex flex-wrap gap-1 m-0">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong></p>
-                <p class="d-flex flex-wrap gap-1">
+                <p class="d-flex flex-wrap gap-1 breadcrumb m-0">
 
                     <?php
                     if ($currentHeading == "District") {
-                        echo '( ' . htmlspecialchars($location['district_name']) . ' District )';
+                        echo '' . htmlspecialchars($location['district_name']) . ' District';
                     } else if ($currentHeading == "Mandalam") {
-                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
-                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam )';
+                        echo '' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ' → ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
                     } else if ($currentHeading == "Localbody") {
-                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
-                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
-                        echo ', ' . htmlspecialchars($location['localbody_name']) . ' Localbody )';
+                        echo '' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ' → ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
+                        echo ' → ' . htmlspecialchars($location['localbody_name']) . ' Localbody';
                     } else if ($currentHeading == "Unit") {
-                        echo '( ' . htmlspecialchars($location['district_name']) . ' District';
-                        echo ', ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
-                        echo ', ' . htmlspecialchars($location['localbody_name']) . ' Localbody';
-                        echo ', ' . htmlspecialchars($location['unit_name']) . ' Unit )';
+                        echo '' . htmlspecialchars($location['district_name']) . ' District';
+                        echo ' → ' . htmlspecialchars($location['mandalam_name']) . ' Mandalam';
+                        echo ' → ' . htmlspecialchars($location['localbody_name']) . ' Localbody';
+                        echo ' → ' . htmlspecialchars($location['unit_name']) . ' Unit';
                     }
                     ?>
                 </p>
@@ -401,13 +407,26 @@ try {
                             <th>Phone</th>
                         <?php endif; ?>
                         <th>
-                            Collected Amount
+                            App Collection
                             <?php if ($currentHeading != "Unit"): ?>
                             <?php endif; ?>
                         </th>
+                        <th>
+                            Paper Collection
+                            <?php if ($currentHeading != "Unit"): ?>
+                            <?php endif; ?>
+                        </th>
+                        <th>
+                            Total Collection
+                            <?php if ($currentHeading != "Unit"): ?>
+                            <?php endif; ?>
+                        </th>
+                        <?php if ($currentHeading != "Unit"): ?>
+                            <th>Percentage</th>
+                        <?php endif; ?>
+
                         <!-- <th>Collected Today</th> -->
-                        <th class="d-none d-lg-table-cell">Donations</th>
-                        <th>Actions</th>
+                        <th class="d-none d-lg-table-cell">Donors</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -417,7 +436,7 @@ try {
                         </tr>
                     <?php else: ?>
                         <?php foreach ($summary as $row): ?>
-                            <tr>
+                            <tr class="table-clickable-row" onclick="location.href='../reports/view_reports.php?level=<?php echo $currentHeading == "Unit" ? "unit" : $childName; ?>&id=<?php echo $currentHeading == "Unit" ? $parent_id . "&colid=" . $row['id'] : $row['id']; ?>'">
                                 <td><?php echo htmlspecialchars($row['id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['name']); ?></td>
                                 <?php if ($currentHeading != "Unit"): ?>
@@ -432,22 +451,20 @@ try {
                                 <?php else: ?>
                                     <td><?php echo htmlspecialchars($row['phone']); ?></td>
                                 <?php endif; ?>
-                                <td>₹<?php echo number_format($row['collected_amount'], 2); ?>
-                                    <?php if ($currentHeading != "Unit"): ?>
-                                        <?php
-                                        $percentage = $row['target_amount'] > 0
-                                            ? ($row['collected_amount'] / $row['target_amount']) * 100
+                                <td>₹<?php echo number_format($row['collected_amount_app'], 2); ?></td>
+                                <td>₹<?php echo number_format($row['collected_amount_coupon'], 2); ?></td>
+                                <td>₹<?php echo number_format($row['collected_amount_app'] + $row['collected_amount_coupon'], 2); ?></td>
+                                <?php if ($currentHeading != "Unit"): ?>
+                                    <td>
+                                        <?php $percentage = $row['target_amount'] > 0
+                                            ? (($row['collected_amount_app'] + $row['collected_amount_coupon']) / $row['target_amount']) * 100
                                             : 0;
-                                        echo ' (' . number_format($percentage, 2) . '%)';
+                                        echo number_format($percentage, 2) . '%';
                                         ?>
-                                    <?php endif; ?>
-                                </td>
+                                    </td>
+                                <?php endif; ?>
                                 <!-- <td><?php echo htmlspecialchars($row['today_collected']); ?></td> -->
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
-                                <td>
-                                    <a href="../reports/view_reports.php?level=<?php echo $currentHeading == "Unit" ? "unit" : $childName; ?>&id=<?php echo $currentHeading == "Unit" ? $parent_id . "&colid=" . $row['id'] : $row['id']; ?>"
-                                        class="btn btn-view"><i class="fa-regular fa-newspaper"></i> Report</a>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                         <tr class="table-info-row caption">
