@@ -13,6 +13,7 @@ $totalItems = 0;
 
 $level = $_GET['level'] ?? '';
 $id = $_GET['id'] ?? '';
+$parent_id = $_GET['parent_id'] ?? '';
 $collector_id = $_GET['colid'] ?? '';
 $collector_filter = "";
 if ($collector_id) {
@@ -56,6 +57,8 @@ $levelHierarchy = [
 ];
 
 $currentLevelPerm = $levelHierarchy[$level];
+$currentLevelChild = $currentLevelPerm['child'][0];
+$currentLevelChildId = $currentLevelPerm['child'][0] . '_id';
 
 try {
     // Get the current level details  
@@ -262,8 +265,11 @@ try {
         <div class="header">
             <h2><?php echo htmlspecialchars($details['name']); ?> <?php echo ucfirst($level); ?></h2>
             <p>
-                <!-- <a href="<?php echo $currentLevelPerm['parent'] ? './view_reports.php?level=' . $currentLevelPerm['parent'] . '&id=' . $id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-secondary">← Back</a> -->
-                <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                <?php if ($parent_id): ?>
+                    <a href="<?php echo $currentLevelPerm['parent'] ? './view_reports.php?level=' . $currentLevelPerm['parent'] . '&id=' . $parent_id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-secondary">← Back</a>
+                <?php else: ?>
+                    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                <?php endif; ?>
 
             </p>
         </div>
@@ -375,15 +381,7 @@ try {
                             </tr>
                         <?php else: ?>
                             <?php foreach ($collections as $row): ?>
-                                <tr class="table-clickable-row" onclick="location.href=`view_reports.php?level=<?php echo match ($level) {
-                                                                                                                    'district' => 'mandalam',
-                                                                                                                    'mandalam' => 'localbody',
-                                                                                                                    'localbody' => 'unit'
-                                                                                                                }; ?>&id=<?php echo $row[match ($level) {
-                                                                                                                                'district' => 'mandalam_id',
-                                                                                                                                'mandalam' => 'localbody_id',
-                                                                                                                                'localbody' => 'unit_id'
-                                                                                                                            }]; ?>`">
+                                <tr class="<?php echo $level == "unit" ? "" :  "table-clickable-row" ?>" onclick='handleTableRowClick(<?php echo json_encode($row); ?>)'>
                                     <?php if ($level == 'unit'): ?>
                                         <td><?php echo htmlspecialchars($row['receipt_number']); ?></td>
                                         <td><?php echo date('d-m-Y', strtotime($row['created_at'])); ?></td>
@@ -423,17 +421,17 @@ try {
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($collections); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                 ← Prev
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
                                                 <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                    <option value="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo $i; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                    <option value="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo $i; ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
                                                         Page <?php echo $i; ?>
                                                     </option>
                                                 <?php endfor; ?>
                                             </select>
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                 Next →
                                             </a>
                                         </div>
@@ -530,5 +528,20 @@ try {
         }
     </style>
 </body>
+<script>
+    const level = "<?php echo $level; ?>";
+    const childLevel = "<?php echo $currentLevelChild; ?>";
+    const parentId = "<?php echo $id; ?>";
+
+    function handleTableRowClick(row) {
+        const childLevelId = row["<?php echo $currentLevelChildId; ?>"];
+        // console.log(row)
+        if (level === 'unit') {
+            // Add any specific logic for 'unit' level if needed
+        } else {
+            location.href = `view_reports.php?level=${childLevel}&id=${childLevelId}`;
+        }
+    }
+</script>
 
 </html>
