@@ -53,18 +53,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .input-container {
-            position: relative;
-        }
-
-        .eye-icon {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-        }
-
         .error {
             color: #dc3545;
             padding: 10px;
@@ -162,12 +150,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    function togglePasswordVisibility() {
+    function togglePasswordVisibility(event) {
         var input = document.getElementById("new_mpin");
         if (input.type === "password") {
             input.type = "text";
+            event.target.classList.remove("fa-eye");
+            event.target.classList.add("fa-eye-slash");
         } else {
             input.type = "password";
+            event.target.classList.remove("fa-eye-slash");
+            event.target.classList.add("fa-eye");
         }
     }
 
@@ -192,7 +184,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         response = JSON.parse(response)
                         if (response.status == 200) {
                             isotpsent = true;
-                            $('form .submit-button').before(`<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container m-0"><input type="password" id="new_mpin" name="new_mpin" pattern="\\d{4}|\\d{6}" minlength="4" maxlength="6" oninvalid="this.setCustomValidity('MPIN must be 4 or 6 digits.')" oninput="this.setCustomValidity('')" required><span class="eye-icon" onclick="togglePasswordVisibility()">👁️</span></div><div class="form-text">MPIN must be 4 or 6 digits.</div></div>`);
+                            $('form .submit-button').before(`<div class="form-group"><label for="otp">OTP</label><input type="text" id="otp" name="otp" required></div><div class="form-group"><label for="new_mpin">New MPIN</label><div class="form-group input-container m-0"><input type="password" id="new_mpin" name="new_mpin" pattern="\\d{4}|\\d{6}" minlength="4" maxlength="6" oninvalid="this.setCustomValidity('MPIN must be 4 or 6 digits.')" oninput="this.setCustomValidity('')" required><i class="fa-solid fa-eye eye-icon" onclick="togglePasswordVisibility(event)"></i></div><div class="form-text">MPIN must be 4 or 6 digits.</div></div>`);
                             $('#success').html(response.message).removeClass('d-none');
                         } else {
                             $('#error').removeClass('d-none').html(response.message);

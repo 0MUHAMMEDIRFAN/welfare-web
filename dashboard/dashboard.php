@@ -280,6 +280,7 @@ try {
 
 <head>
     <title><?php echo $currentHeading; ?> Admin Dashboard</title>
+    <link rel="stylesheet" href="./dashboard.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -309,11 +310,10 @@ try {
     </nav>
 
     <div class="dashboard">
-        <div class="header">
+        <div class="header mb-5">
             <div class="d-flex flex-column flex-wrap">
-                <p class="d-flex flex-wrap gap-1 m-0">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong></p>
+                <h5 class="d-flex flex-wrap gap-1 m-0">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong></h5>
                 <p class="d-flex flex-wrap gap-1 breadcrumb m-0">
-
                     <?php
                     if ($currentHeading == "District") {
                         echo '' . htmlspecialchars($location['district_name']) . ' District';
@@ -333,7 +333,7 @@ try {
                     ?>
                 </p>
             </div>
-            <p class="d-flex gap-2 flex-wrap justify-content-end">
+            <p class="d-flex gap-2 flex-wrap justify-content-end m-0">
                 <?php if ($currentHeading == "Unit") {
                     echo '<a href="../admin/manage_collectors.php" class="btn btn-manage">Manage Collectors</a>';
                 } else {
@@ -345,51 +345,81 @@ try {
         </div>
 
         <div class="summary-cards">
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Target</h3>
+                <!-- <i class="fa-solid fa-minimize card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo ($currentHeading == "Unit") ? $location["unit_target_amount"] : number_format($totalTarget, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Total Collection</h3>
+                <!-- <i class="fa-solid fa-arrow-trend-up card-icon"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo number_format($totalCollected, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Percentage</h3>
+                <!-- <i class="fa-solid fa-percent card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</p>
                 <!-- <h6 class="">(<?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%)</h6> -->
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Donors</h3>
+                <!-- <i class="fa-solid fa-users card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p><?php echo number_format($totalDonations); ?></p>
             </div>
         </div>
         <h5 class="text-center mb-3">Collected Through Application</h5>
         <div class="summary-cards">
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Online</h3>
+                <!-- <i class="fa-brands fa-paypal card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo number_format($totalOnlineCollected, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Offline</h3>
+                <!-- <i class="fa-solid fa-money-bill card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo number_format($totalCashCollected, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Total</h3>
+                <!-- <i class="fa-solid fa-arrow-trend-up card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo number_format($totalCollectedMobile, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Donors</h3>
+                <!-- <i class="fa-solid fa-users card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p><?php echo number_format($totalDonations); ?></p>
             </div>
         </div>
         <h5 class="text-center mb-3">Collected Through Coupons</h5>
         <div class="summary-cards">
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Total</h3>
+                <!-- <i class="fa-solid fa-arrow-trend-up card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>₹<?php echo number_format($totalCollectedPaper, 2); ?></p>
             </div>
-            <div class="card">
+            <div class="card custom-card">
+                <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Donors</h3>
+                <!-- <i class="fa-solid fa-users card-icon bg-"></i> -->
+                <!-- </div> -->
                 <p>-</p>
             </div>
         </div>
@@ -519,114 +549,6 @@ try {
         </div>
     </div>
 
-    <style>
-        .dashboard {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .breadcrumb {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-
-            @media (max-width: 992px) {
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-
-                @media (max-width: 668px) {
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                }
-            }
-        }
-
-        .card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .card h3 {
-            margin: 0 0 10px 0;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .card p {
-            margin: 0;
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 4px 16px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-view {
-            background: #007bff;
-            color: white;
-        }
-
-        .btn-manage {
-            background: rgb(250, 193, 7);
-            color: black;
-        }
-
-        .btn.edit-target {
-            display: inline-block;
-            padding: 5px 5px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 11px;
-        }
-
-        .gap {
-            margin: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-    </style>
-
     <!-- Add Bootstrap JS and jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -634,7 +556,8 @@ try {
     <script>
         $(document).ready(function() {
             // Edit target amount button click  
-            $('.edit-target').click(function() {
+            $('.edit-target').click(function(event) {
+                event.stopPropagation();
                 const entityId = $(this).data('id');
                 const currentTarget = $(this).data('target');
 

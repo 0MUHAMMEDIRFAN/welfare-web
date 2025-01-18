@@ -68,23 +68,79 @@ try {
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
              JOIN mandalams m ON l.mandalam_id = m.id   
-             WHERE m.district_id = d.id) as total_units  
+             WHERE m.district_id = d.id) as total_units,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id
+             WHERE m.district_id = d.id) as total_collection_app,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id
+             WHERE m.district_id = d.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id
+             WHERE m.district_id = d.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id
+             WHERE m.district_id = d.id AND d.payment_type != 'CASH') as total_collection_online
             FROM districts d WHERE d.id = ?",
         'mandalam' => "SELECT m.*, d.name as district_name,  
             (SELECT COUNT(*) FROM localbodies WHERE mandalam_id = m.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
-             WHERE l.mandalam_id = m.id) as total_units  
+             WHERE l.mandalam_id = m.id) as total_units,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             WHERE l.mandalam_id = m.id) as total_collection_app,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             WHERE l.mandalam_id = m.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             WHERE l.mandalam_id = m.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             WHERE l.mandalam_id = m.id AND d.payment_type != 'CASH') as total_collection_online
             FROM mandalams m   
             JOIN districts d ON m.district_id = d.id   
             WHERE m.id = ?",
         'localbody' => "SELECT l.*, m.name as mandalam_name, d.name as district_name,  
-            (SELECT COUNT(*) FROM units WHERE localbody_id = l.id) as total_units  
+            (SELECT COUNT(*) FROM units WHERE localbody_id = l.id) as total_units,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             WHERE u.localbody_id = l.id) as total_collection_app,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id
+             WHERE u.localbody_id = l.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             WHERE u.localbody_id = l.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             WHERE u.localbody_id = l.id AND d.payment_type != 'CASH') as total_collection_online
             FROM localbodies l   
             JOIN mandalams m ON l.mandalam_id = m.id  
             JOIN districts d ON m.district_id = d.id   
             WHERE l.id = ?",
-        'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name  
+        'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             WHERE d.unit_id = u.id) as total_collection_app,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             WHERE cr.unit_id = u.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             WHERE d.unit_id = u.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             WHERE d.unit_id = u.id AND d.payment_type != 'CASH') as total_collection_online
             FROM units u   
             JOIN localbodies l ON u.localbody_id = l.id  
             JOIN mandalams m ON l.mandalam_id = m.id  
@@ -107,43 +163,55 @@ try {
 
     $collectionQuery = match ($level) {
         'district' => "SELECT SQL_CALC_FOUND_ROWS   
-            m.name as mandalam_name, m.id as mandalam_id,  
-            COALESCE(SUM(d.amount), 0) as total_amount,  
-            COUNT(DISTINCT d.id) as total_donations  
+            m.name as name, m.id as mandalam_id,  
+            COALESCE(SUM(d.amount), 0) as total_collected_app,  
+            COUNT(DISTINCT d.id) as total_donations,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
+            m.target_amount
             FROM mandalams m   
             LEFT JOIN localbodies l ON l.mandalam_id = m.id  
             LEFT JOIN units u ON u.localbody_id = l.id  
             LEFT JOIN donations d ON d.unit_id = u.id  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
             WHERE m.district_id = ?  
-            GROUP BY m.id, m.name  
+            GROUP BY m.id, m.name, m.target_amount  
             ORDER BY m.name  
             LIMIT $limit OFFSET $offset",
         'mandalam' => "SELECT SQL_CALC_FOUND_ROWS   
-            l.name as localbody_name, l.id as localbody_id,  
-            COALESCE(SUM(d.amount), 0) as total_amount,  
-            COUNT(DISTINCT d.id) as total_donations  
+            l.name as name, l.id as localbody_id,  
+            COALESCE(SUM(d.amount), 0) as total_collected_app,  
+            COUNT(DISTINCT d.id) as total_donations,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
+            l.target_amount
             FROM localbodies l  
             LEFT JOIN units u ON u.localbody_id = l.id  
             LEFT JOIN donations d ON d.unit_id = u.id  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
             WHERE l.mandalam_id = ?  
-            GROUP BY l.id, l.name  
+            GROUP BY l.id, l.name, l.target_amount  
             ORDER BY l.name  
             LIMIT $limit OFFSET $offset",
         'localbody' => "SELECT SQL_CALC_FOUND_ROWS   
-            u.name as unit_name, u.id as unit_id,  
-            COALESCE(SUM(d.amount), 0) as total_amount,  
-            COUNT(DISTINCT d.id) as total_donations  
+            u.name as name, u.id as unit_id,  
+            COALESCE(SUM(d.amount), 0) as total_collected_app,  
+            COUNT(DISTINCT d.id) as total_donations,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
+            u.target_amount
             FROM units u  
             LEFT JOIN donations d ON d.unit_id = u.id  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
             WHERE u.localbody_id = ?  
-            GROUP BY u.id, u.name  
+            GROUP BY u.id, u.name, u.target_amount  
             ORDER BY u.name  
             LIMIT $limit OFFSET $offset",
         'unit' => "SELECT SQL_CALC_FOUND_ROWS   
-            d.*, u.name as collector_name  
+            d.*, u.name as collector_name,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
             FROM donations d  
             LEFT JOIN users u ON d.collector_id = u.id  
+            LEFT JOIN collection_reports cr ON cr.unit_id = d.unit_id
             WHERE d.unit_id = ?  $collector_filter
+            GROUP BY d.id
             ORDER BY d.created_at DESC  
             LIMIT $limit OFFSET $offset",
         default => throw new Exception("Invalid level")
@@ -219,6 +287,10 @@ try {
                     <h3>Target Amount</h3>
                     <p>₹<?php echo number_format($details['target_amount'], 2); ?></p>
                 </div>
+                <div class="card">
+                    <h3>Total Collected</h3>
+                    <p>₹<?php echo number_format($details['total_collection_paper'] + $details['total_collection_app'], 2); ?></p>
+                </div>
                 <?php if (isset($details['total_mandalams'])): ?>
                     <div class="card">
                         <h3>Total Mandalams</h3>
@@ -239,6 +311,39 @@ try {
                 <?php endif; ?>
             </div>
 
+            <h5 class="text-center mb-3">Collected Through Application</h5>
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Online</h3>
+                    <p>₹<?php echo number_format($details['total_collection_online'], 2); ?></p>
+                </div>
+                <div class="card">
+                    <h3>Offline</h3>
+                    <p>₹<?php echo number_format($details['total_collection_offline'], 2); ?></p>
+                </div>
+                <div class="card">
+                    <h3>Total Collected App</h3>
+                    <p>₹<?php echo number_format($details['total_collection_app'], 2); ?></p>
+                </div>
+                <div class="card">
+                    <h3>Donors</h3>
+                    <p>-</p>
+                </div>
+            </div>
+
+            <h5 class="text-center mb-3">Collected Through Coupons</h5>
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Total Collected</h3>
+                    <p>₹<?php echo number_format($details['total_collection_paper'], 2); ?></p>
+                </div>
+                <div class="card">
+                    <h3>Donors</h3>
+                    <p>-</p>
+                </div>
+            </div>
+
+
             <div class="content table-responsive">
                 <h3>Collection Reports</h3>
                 <table>
@@ -254,9 +359,12 @@ try {
                             <?php else: ?>
                                 <th>ID</th>
                                 <th>Name</th>
+                                <th>Target</th>
+                                <th>App Collection</th>
+                                <th>Paper Collection</th>
                                 <th>Total Collections</th>
-                                <th>Collected</th>
-                                <th>Actions</th>
+                                <th>Percentage</th>
+                                <th>Donors</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -267,7 +375,15 @@ try {
                             </tr>
                         <?php else: ?>
                             <?php foreach ($collections as $row): ?>
-                                <tr>
+                                <tr class="table-clickable-row" onclick="location.href=`view_reports.php?level=<?php echo match ($level) {
+                                                                                                                    'district' => 'mandalam',
+                                                                                                                    'mandalam' => 'localbody',
+                                                                                                                    'localbody' => 'unit'
+                                                                                                                }; ?>&id=<?php echo $row[match ($level) {
+                                                                                                                                'district' => 'mandalam_id',
+                                                                                                                                'mandalam' => 'localbody_id',
+                                                                                                                                'localbody' => 'unit_id'
+                                                                                                                            }]; ?>`">
                                     <?php if ($level == 'unit'): ?>
                                         <td><?php echo htmlspecialchars($row['receipt_number']); ?></td>
                                         <td><?php echo date('d-m-Y', strtotime($row['created_at'])); ?></td>
@@ -286,32 +402,19 @@ try {
                                             }]);
                                             ?>
                                         </td>
+                                        <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                        <td>₹<?php echo number_format($row['target_amount'], 2); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_app'], 2); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_paper'], 2); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_paper'] + $row['total_collected_app'], 2); ?></td>
                                         <td>
-                                            <?php
-                                            echo htmlspecialchars($row[match ($level) {
-                                                'district' => 'mandalam_name',
-                                                'mandalam' => 'localbody_name',
-                                                'localbody' => 'unit_name',
-                                                default => 'name'
-                                            }]);
+                                            <?php $percentage = $row['target_amount'] > 0
+                                                ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100
+                                                : 0;
+                                            echo number_format($percentage, 2) . '%';
                                             ?>
                                         </td>
                                         <td><?php echo $row['total_donations']; ?></td>
-                                        <td>₹<?php echo number_format($row['total_amount'], 2); ?></td>
-                                        <td>
-                                            <a href="view_reports.php?level=<?php
-                                                                            echo match ($level) {
-                                                                                'district' => 'mandalam',
-                                                                                'mandalam' => 'localbody',
-                                                                                'localbody' => 'unit'
-                                                                            };
-                                                                            ?>&id=<?php echo $row[match ($level) {
-                                                                                        'district' => 'mandalam_id',
-                                                                                        'mandalam' => 'localbody_id',
-                                                                                        'localbody' => 'unit_id'
-                                                                                    }]; ?>"
-                                                class="btn btn-view"><i class="fa-regular fa-newspaper"></i> Report</a>
-                                        </td>
                                     <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>

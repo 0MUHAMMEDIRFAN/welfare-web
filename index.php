@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <link rel="stylesheet" href="assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -69,9 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label>Phone</label>
                 <input type="text" name="phone" required>
             </div>
-            <div class="mb-2">
+            <div class="mb-2 input-container">
                 <label>MPIN</label>
-                <input type="password" name="mpin" required>
+                <div class="input-container m-0">
+                    <input type="password" name="mpin" id="mpin" required>
+                    <i class="fa-solid fa-eye eye-icon" onclick="togglePasswordVisibility(event)"></i>
+                </div>
             </div>
             <p class="text-end mb-2">
                 <a href="./admin/newMpin.php" class="fw-bolder small text-primary">Forgot MPIN?</a>
@@ -190,6 +194,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     </style>
 </body>
+<script>
+    function togglePasswordVisibility(event) {
+        var input = document.getElementById("mpin");
+        if (input.type === "password") {
+            input.type = "text";
+            event.target.classList.remove("fa-eye");
+            event.target.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            event.target.classList.remove("fa-eye-slash");
+            event.target.classList.add("fa-eye");
+        }
+    }
+</script>
 <!-- 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
