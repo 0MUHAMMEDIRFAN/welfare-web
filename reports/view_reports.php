@@ -206,7 +206,7 @@ try {
             LIMIT $limit OFFSET $offset",
         'unit' => "SELECT SQL_CALC_FOUND_ROWS   
             d.*, u.name as collector_name,
-            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper
             FROM donations d  
             LEFT JOIN users u ON d.collector_id = u.id  
             LEFT JOIN collection_reports cr ON cr.unit_id = d.unit_id
