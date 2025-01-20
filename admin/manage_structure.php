@@ -247,103 +247,106 @@ try {
             </form>
         </div>
 
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h5>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
-                    Add <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>
-                </button>
+        <div class="mb-4">
+            <div class="card mb-1">
+                <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        Add <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <?php if ($parentFieldTable): ?>
+                                <th><?php echo ucfirst(getSingularForm($parentFieldTable)); ?></th>
+                            <?php endif; ?>
+                            <?php if ($canManage === 'localbody_admin'): ?>
+                                <th class="d-none d-md-table-cell">Type</th>
+                            <?php endif; ?>
+                            <th class="d-none d-md-table-cell">Target Amount</th>
+                            <th class="d-none d-lg-table-cell">Created At</th>
+                            <th class="d-none d-xl-table-cell">Updated At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <?php if ($parentFieldTable): ?>
-                                    <th><?php echo ucfirst(getSingularForm($parentFieldTable)); ?></th>
-                                <?php endif; ?>
-                                <?php if ($canManage === 'localbody_admin'): ?>
-                                    <th class="d-none d-md-table-cell">Type</th>
-                                <?php endif; ?>
-                                <th class="d-none d-md-table-cell">Target Amount</th>
-                                <th class="d-none d-lg-table-cell">Created At</th>
-                                <th class="d-none d-xl-table-cell">Updated At</th>
-                                <th>Actions</th>
+                                <td colspan="12" class="text-center">No records found</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($items)): ?>
-                                <tr>
-                                    <td colspan="12" class="text-center">No records found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($items as $item): ?>
-                                    <tr data-item="<?php echo $item['id']; ?>">
-                                        <td><?php echo htmlspecialchars($item['id']); ?></td>
-                                        <td><?php echo htmlspecialchars($item['name']); ?></td>
-                                        <?php if ($parentFieldTable): ?>
-                                            <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
-                                        <?php endif; ?>
-                                        <?php if ($canManage === 'localbody_admin'): ?>
-                                            <td class="d-none d-md-table-cell"><?php echo htmlspecialchars($item['type']); ?></td>
-                                        <?php endif; ?>
-                                        <td class="target-amount d-none d-md-table-cell">₹<?php echo number_format($item['target_amount'], 2); ?></td>
-                                        <td class="d-none d-lg-table-cell"><?php echo htmlspecialchars($item['created_at']); ?></td>
-                                        <td class="d-none d-xl-table-cell"><?php echo htmlspecialchars($item['updated_at']); ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-warning edit-item"
-                                                data-id="<?php echo $item['id']; ?>"
-                                                data-name="<?php echo htmlspecialchars($item['name']); ?>"
-                                                data-target="<?php echo $item['target_amount']; ?>"
-                                                <?php
-                                                if ($managingRole === 'mandalam_admin' || $managingRole === 'localbody_admin' || $managingRole === 'unit_admin') {
-                                                    echo 'data-district= "' . $item['district_id'] . '"';
-                                                    if ($managingRole === 'localbody_admin' || $managingRole === 'unit_admin') {
-                                                        echo 'data-mandalam="' . $item['mandalam_id'] . '"';
-                                                        if ($managingRole === 'unit_admin') {
-                                                            echo 'data-localbody="' . $item['localbody_id'] . '"';
-                                                        }
+                        <?php else: ?>
+                            <?php foreach ($items as $item): ?>
+                                <tr data-item="<?php echo $item['id']; ?>">
+                                    <td><?php echo htmlspecialchars($item['id']); ?></td>
+                                    <td><?php echo htmlspecialchars($item['name']); ?></td>
+                                    <?php if ($parentFieldTable): ?>
+                                        <td><?php echo htmlspecialchars($item['parent_name']); ?></td>
+                                    <?php endif; ?>
+                                    <?php if ($canManage === 'localbody_admin'): ?>
+                                        <td class="d-none d-md-table-cell"><?php echo htmlspecialchars($item['type']); ?></td>
+                                    <?php endif; ?>
+                                    <td class="target-amount d-none d-md-table-cell">₹<?php echo number_format($item['target_amount'], 2); ?></td>
+                                    <td class="d-none d-lg-table-cell"><?php echo htmlspecialchars($item['created_at']); ?></td>
+                                    <td class="d-none d-xl-table-cell"><?php echo htmlspecialchars($item['updated_at']); ?></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning edit-item"
+                                            data-id="<?php echo $item['id']; ?>"
+                                            data-name="<?php echo htmlspecialchars($item['name']); ?>"
+                                            data-target="<?php echo $item['target_amount']; ?>"
+                                            <?php
+                                            if ($managingRole === 'mandalam_admin' || $managingRole === 'localbody_admin' || $managingRole === 'unit_admin') {
+                                                echo 'data-district= "' . $item['district_id'] . '"';
+                                                if ($managingRole === 'localbody_admin' || $managingRole === 'unit_admin') {
+                                                    echo 'data-mandalam="' . $item['mandalam_id'] . '"';
+                                                    if ($managingRole === 'unit_admin') {
+                                                        echo 'data-localbody="' . $item['localbody_id'] . '"';
                                                     }
                                                 }
-                                                ?>>
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger delete-item"
-                                                data-id="<?php echo $item['id']; ?>">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-
-                                <tr class="table-info-row caption">
-                                    <td colspan="12" class="">
-                                        <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
-                                            <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
-                                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
-                                                    ← Prev
-                                                </a>
-                                                <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
-                                                    <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
-                                                            Page <?php echo $i; ?>
-                                                        </option>
-                                                    <?php endfor; ?>
-                                                </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
-                                                    Next →
-                                                </a>
-                                            </div>
-                                        </div>
+                                            }
+                                            ?>>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-item"
+                                            data-id="<?php echo $item['id']; ?>">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <?php if (!empty($items)): ?>
+                        <tfoot>
+                            <tr class="table-info-row caption">
+                                <td colspan="12" class="">
+                                    <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                        <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                ← Prev
+                                            </a>
+                                            <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                    <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        Page <?php echo $i; ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                Next →
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    <?php endif; ?>
+                </table>
             </div>
         </div>
     </div>

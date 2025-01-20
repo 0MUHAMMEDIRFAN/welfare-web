@@ -14,6 +14,15 @@ $unit_id = $_SESSION['user_level_id'];;
 $success_message = '';
 $error_message = '';
 
+
+$limit = 10; // Number of records per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+$totalItems = 0;
+
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+
 // Get unit details  
 try {
     $stmt = $pdo->prepare("  
@@ -146,15 +155,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Get collectors list  
 try {
-    $stmt = $pdo->prepare("  
-        SELECT id, name, phone, is_active   
+    // Handle search functionality
+    if ($search) {
+        $searchQuery = " AND (name LIKE :search OR phone LIKE :search)";
+        $searchParam = '%' . $search . '%';
+        $searchParams = "&search=$search";
+    } else {
+        $searchQuery = '';
+        $searchParam = '';
+        $searchParams = '';
+    }
+
+    $query = "SELECT SQL_CALC_FOUND_ROWS id, name, phone, is_active   
         FROM users   
         WHERE role = 'collector'   
-        AND unit_id = ?   
+        AND unit_id = :unit_id   
+        $searchQuery
         ORDER BY name  
-    ");
-    $stmt->execute([$unit_id]);
+        LIMIT :limit OFFSET :offset";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':unit_id', $unit_id, PDO::PARAM_INT);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+    if ($search) {
+        $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
+    }
+    $stmt->execute();
     $collectors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Get total items for pagination
+    $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
@@ -166,6 +196,7 @@ try {
 <head>
     <title>Manage Collectors</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="./admin.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -182,6 +213,9 @@ try {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="../dashboard/dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="../logout.php">Logout</a>
                     </li>
                 </ul>
@@ -190,20 +224,19 @@ try {
     </nav>
     <div class="dashboard">
         <div class="header">
-            <h2>Manage Collectors</h2>
+            <div class="details-section">
+                <h4><?php echo htmlspecialchars($location['unit_name']); ?> Unit</h4>
+                <p class="text-muted">
+                    <?php echo htmlspecialchars($location['district_name']); ?> District
+                    → <?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam
+                    → <?php echo htmlspecialchars($location['localbody_name']); ?> Localbody
+                </p>
+            </div>
             <p>
                 <a href="../dashboard/dashboard.php" class="btn btn-secondary">← Back</a>
             </p>
         </div>
 
-        <div class="details-section">
-            <h4><?php echo htmlspecialchars($location['unit_name']); ?> Unit</h4>
-            <p class="text-muted">
-                <?php echo htmlspecialchars($location['localbody_name']); ?>, <br>
-                <?php echo htmlspecialchars($location['mandalam_name']); ?> Mandalam,
-                <?php echo htmlspecialchars($location['district_name']); ?> District
-            </p>
-        </div>
 
         <?php if ($success_message): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
@@ -246,197 +279,122 @@ try {
         </div>
 
         <!-- Collectors List -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Collectors List</h5>
+        <div class="mb-4">
+            <div class="card mb-1">
+                <div class="card-header border-bottom-0">
+                    <h5 class="mb-0">Collectors List</h5>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($collectors as $collector): ?>
                             <tr>
-                                <th>Name</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($collectors as $collector): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($collector['name']); ?></td>
-                                    <td><?php echo htmlspecialchars($collector['phone']); ?></td>
-                                    <td>
-                                        <span class="badge <?php echo $collector['is_active'] == 1 ? 'bg-success' : 'bg-danger'; ?>">
-                                            <?php echo $collector['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editModal<?php echo $collector['id']; ?>">
-                                            Edit
+                                <td><?php echo htmlspecialchars($collector['name']); ?></td>
+                                <td><?php echo htmlspecialchars($collector['phone']); ?></td>
+                                <td>
+                                    <span class="badge <?php echo $collector['is_active'] == 1 ? 'bg-success' : 'bg-danger'; ?>">
+                                        <?php echo $collector['is_active'] == 1 ? 'Active' : 'Inactive'; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editModal<?php echo $collector['id']; ?>">
+                                        Edit
+                                    </button>
+                                    <form method="POST" action="" class="d-inline">
+                                        <input type="hidden" name="action" value="toggle_status">
+                                        <input type="hidden" name="collector_id" value="<?php echo $collector['id']; ?>">
+                                        <input type="hidden" name="status" value="<?php echo $collector['is_active']; ?>">
+                                        <button type="submit" class="btn btn-sm <?php echo $collector['is_active'] == 1 ? 'btn-danger' : 'btn-success'; ?>">
+                                            <?php echo $collector['is_active'] == 1 ? 'Deactivate' : 'Activate'; ?>
                                         </button>
-                                        <form method="POST" action="" class="d-inline">
-                                            <input type="hidden" name="action" value="toggle_status">
-                                            <input type="hidden" name="collector_id" value="<?php echo $collector['id']; ?>">
-                                            <input type="hidden" name="status" value="<?php echo $collector['is_active']; ?>">
-                                            <button type="submit" class="btn btn-sm <?php echo $collector['is_active'] == 1 ? 'btn-danger' : 'btn-success'; ?>">
-                                                <?php echo $collector['is_active'] == 1 ? 'Deactivate' : 'Activate'; ?>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
+                                    </form>
+                                </td>
+                            </tr>
 
-                                <!-- Edit Modal for each collector -->
-                                <div class="modal fade" id="editModal<?php echo $collector['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Edit Collector</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST" action="">
-                                                <div class="modal-body">
-                                                    <input type="hidden" name="action" value="update">
-                                                    <input type="hidden" name="collector_id" value="<?php echo $collector['id']; ?>">
+                            <!-- Edit Modal for each collector -->
+                            <div class="modal fade" id="editModal<?php echo $collector['id']; ?>" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Collector</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="action" value="update">
+                                                <input type="hidden" name="collector_id" value="<?php echo $collector['id']; ?>">
 
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Name</label>
-                                                        <input type="text" class="form-control" name="name"
-                                                            value="<?php echo htmlspecialchars($collector['name']); ?>" required>
-                                                    </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Name</label>
+                                                    <input type="text" class="form-control" name="name"
+                                                        value="<?php echo htmlspecialchars($collector['name']); ?>" required>
+                                                </div>
 
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Phone</label>
-                                                        <input type="text" class="form-control" name="phone"
-                                                            value="<?php echo htmlspecialchars($collector['phone']); ?>"
-                                                            pattern="[0-9]{10}" maxlength="10" required>
-                                                    </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Phone</label>
+                                                    <input type="text" class="form-control" name="phone"
+                                                        value="<?php echo htmlspecialchars($collector['phone']); ?>"
+                                                        pattern="[0-9]{10}" maxlength="10" required>
+                                                </div>
 
-                                                    <!-- <div class="mb-3">  
+                                                <!-- <div class="mb-3">  
                                                     <label class="form-label">New MPIN (leave blank to keep current)</label>  
                                                     <input type="password" class="form-control" name="mpin"   
                                                            pattern="[0-9]{4,6}" maxlength="6">  
                                                 </div>   -->
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php if (!empty($collectors)): ?>
+                        <tfoot>
+                            <tr class="table-info-row caption">
+                                <td colspan="12" class="">
+                                    <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                        <p class="align-middle h-100 m-0">Total : <?php echo count($collectors); ?> / <?php echo $totalItems; ?></p>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                ← Prev
+                                            </a>
+                                            <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                    <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        Page <?php echo $i; ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                Next →
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    <?php endif; ?>
+                </table>
             </div>
         </div>
     </div>
-    </div>
-    <style>
-        .dashboard {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .breadcrumb {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .actions {
-            margin: 20px 0;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        .btn-primary {
-            background: #007bff;
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #000;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-
-        td.actions {
-            white-space: nowrap;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-    </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

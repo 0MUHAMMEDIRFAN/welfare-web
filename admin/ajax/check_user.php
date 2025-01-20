@@ -26,7 +26,7 @@ if ($result) {
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
         'secret' => '18ed3b36a814c961ecf50b5ab3079f9bcd1704e7',
-        'account' => '1729855637a5771bce93e200c36f7cd9dfd0e5deaa671b80950a8c2',
+        'account' => '1728045549a5771bce93e200c36f7cd9dfd0e5deaa66ffe1ed4ae7c',
         'recipient' => $phone,
         'type' => 'text',
         'message' => 'Your OTP for resetting your MPIN with Welfare Party Kerala is: ' . $otp . '. It will expire within 10 minutes',

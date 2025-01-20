@@ -184,7 +184,7 @@ try {
     $totalTarget = $currentHeading == "Unit" ? $location['unit_target_amount'] : 0;
     $totalCollectedMobile = 0;
     $totalCollectedToday = 0;
-    $totalDonations = 0;
+    $totalDonors = 0;
 
     // Query to get total target amount
     if ($currentHeading != "Unit") {
@@ -202,7 +202,6 @@ try {
 
     // Query to get total collected amount from mobile and total donations via mobile
     $totalCollectedMobileQuery = "SELECT
-        COALESCE(SUM(dn.amount), 0) as total_collected_mobile,
         COALESCE(SUM(CASE WHEN dn.payment_type = 'CASH' THEN dn.amount END), 0) as total_cash_collected,
         COALESCE(SUM(CASE WHEN dn.payment_type != 'CASH' THEN dn.amount END), 0) as total_online_collected,
         COALESCE(COUNT(DISTINCT dn.id), 0) as total_donations
@@ -224,10 +223,10 @@ try {
     }
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $totalCollectedMobile = $result['total_collected_mobile'];
     $totalCashCollected = $result['total_cash_collected'];
     $totalOnlineCollected = $result['total_online_collected'];
-    $totalDonations = $result['total_donations'];
+    $totalCollectedMobile = $totalCashCollected + $totalOnlineCollected;
+    $totalDonors = $result['total_donations'];
 
     // Query to get total collected amount from paper
     $totalCollectedPaperQuery = "SELECT
@@ -247,6 +246,7 @@ try {
     }
     $stmt->execute();
     $totalCollectedPaper = $stmt->fetchColumn();
+    
     $totalCollected = $totalCollectedMobile + $totalCollectedPaper;
 
     // Query to get total collected amount today
@@ -372,7 +372,7 @@ try {
                 <h3>Donors</h3>
                 <!-- <i class="fa-solid fa-users card-icon bg-"></i> -->
                 <!-- </div> -->
-                <p><?php echo number_format($totalDonations); ?></p>
+                <p><?php echo number_format($totalDonors); ?></p>
             </div>
         </div>
         <h5 class="text-center mb-3">Collected Through Application</h5>
@@ -403,7 +403,7 @@ try {
                 <h3>Donors</h3>
                 <!-- <i class="fa-solid fa-users card-icon bg-"></i> -->
                 <!-- </div> -->
-                <p><?php echo number_format($totalDonations); ?></p>
+                <p><?php echo number_format($totalDonors); ?></p>
             </div>
         </div>
         <h5 class="text-center mb-3">Collected Through Coupons</h5>
@@ -426,7 +426,7 @@ try {
 
         <div class="content table-responsive">
             <h2><?php echo $childHeading; ?> Summary</h2>
-            <table>
+            <table class="">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -497,6 +497,10 @@ try {
                                 <td class="d-none d-lg-table-cell"><?php echo number_format($row['donation_count']); ?></td>
                             </tr>
                         <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+                <?php if (!empty($summary)): ?>
+                    <tfoot>
                         <tr class="table-info-row caption">
                             <td colspan="12" class="">
                                 <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
@@ -519,8 +523,8 @@ try {
                                 </div>
                             </td>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
+                    </tfoot>
+                <?php endif; ?>
             </table>
         </div>
     </div>

@@ -17,7 +17,7 @@ $parent_id = $_GET['parent_id'] ?? '';
 $collector_id = $_GET['colid'] ?? '';
 $collector_filter = "";
 if ($collector_id) {
-    $collector_filter = " AND d.collector_id = $collector_id ";
+    // $collector_filter = " AND d.collector_id = $collector_id ";
 }
 
 if (!$level || !$id) {
@@ -53,6 +53,13 @@ $levelHierarchy = [
         'name_field' => 'name',
         'parent' => 'localbody',
         'parent_field' => ["localbody_id"],
+    ],
+    'collector' => [
+        'child' => [],
+        'child_tables' => ['users'],
+        'name_field' => 'name',
+        'parent' => 'unit',
+        'parent_field' => ["unit_id"],
     ]
 ];
 
@@ -72,11 +79,6 @@ try {
              JOIN localbodies l ON u.localbody_id = l.id   
              JOIN mandalams m ON l.mandalam_id = m.id   
              WHERE m.district_id = d.id) as total_units,
-            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
-             JOIN units u ON d.unit_id = u.id
-             JOIN localbodies l ON u.localbody_id = l.id
-             JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id) as total_collection_app,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
@@ -91,17 +93,18 @@ try {
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id AND d.payment_type != 'CASH') as total_collection_online
+             WHERE m.district_id = d.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id
+             WHERE m.district_id = d.id) as total_donors
             FROM districts d WHERE d.id = ?",
         'mandalam' => "SELECT m.*, d.name as district_name,  
             (SELECT COUNT(*) FROM localbodies WHERE mandalam_id = m.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
              WHERE l.mandalam_id = m.id) as total_units,
-            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
-             JOIN units u ON d.unit_id = u.id
-             JOIN localbodies l ON u.localbody_id = l.id
-             WHERE l.mandalam_id = m.id) as total_collection_app,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
@@ -113,15 +116,16 @@ try {
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
-             WHERE l.mandalam_id = m.id AND d.payment_type != 'CASH') as total_collection_online
+             WHERE l.mandalam_id = m.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             WHERE l.mandalam_id = m.id) as total_donors
             FROM mandalams m   
             JOIN districts d ON m.district_id = d.id   
             WHERE m.id = ?",
         'localbody' => "SELECT l.*, m.name as mandalam_name, d.name as district_name,  
             (SELECT COUNT(*) FROM units WHERE localbody_id = l.id) as total_units,
-            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
-             JOIN units u ON d.unit_id = u.id
-             WHERE u.localbody_id = l.id) as total_collection_app,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
              WHERE u.localbody_id = l.id) as total_collection_paper,
@@ -130,20 +134,23 @@ try {
              WHERE u.localbody_id = l.id AND d.payment_type = 'CASH') as total_collection_offline,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
-             WHERE u.localbody_id = l.id AND d.payment_type != 'CASH') as total_collection_online
+             WHERE u.localbody_id = l.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             WHERE u.localbody_id = l.id) as total_donors
             FROM localbodies l   
             JOIN mandalams m ON l.mandalam_id = m.id  
             JOIN districts d ON m.district_id = d.id   
             WHERE l.id = ?",
         'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name,
-            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
-             WHERE d.unit_id = u.id) as total_collection_app,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              WHERE cr.unit_id = u.id) as total_collection_paper,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              WHERE d.unit_id = u.id AND d.payment_type = 'CASH') as total_collection_offline,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
-             WHERE d.unit_id = u.id AND d.payment_type != 'CASH') as total_collection_online
+             WHERE d.unit_id = u.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             WHERE d.unit_id = u.id) as total_donors
             FROM units u   
             JOIN localbodies l ON u.localbody_id = l.id  
             JOIN mandalams m ON l.mandalam_id = m.id  
@@ -156,13 +163,26 @@ try {
     $stmt->execute([$id]);
     $details = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    $totalCollectedMobile = 0;
+    $totalDonors = 0;
+
+    $totalCashCollected = $details['total_collection_offline'];
+    $totalOnlineCollected = $details['total_collection_online'];
+    $totalCollectedMobile = $totalCashCollected + $totalOnlineCollected;
+    $totalCollectedPaper = $details['total_collection_paper'];
+    $totalCollected = $totalCollectedMobile + $totalCollectedPaper;
+
+    $totalDonors = $details['total_donors'];
+
+
+
     if (!$details) {
         die("Record not found");
     }
 
+
+
     // Get collection details  
-
-
 
     $collectionQuery = match ($level) {
         'district' => "SELECT SQL_CALC_FOUND_ROWS   
@@ -236,6 +256,7 @@ try {
 <head>
     <title>Reports View</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../dashboard/dashboard.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -289,28 +310,28 @@ try {
             <?php endif; ?>
 
             <div class="summary-cards">
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Target Amount</h3>
                     <p>₹<?php echo number_format($details['target_amount'], 2); ?></p>
                 </div>
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Total Collected</h3>
-                    <p>₹<?php echo number_format($details['total_collection_paper'] + $details['total_collection_app'], 2); ?></p>
+                    <p>₹<?php echo number_format($totalCollected, 2); ?></p>
                 </div>
                 <?php if (isset($details['total_mandalams'])): ?>
-                    <div class="card">
+                    <div class="card custom-card">
                         <h3>Total Mandalams</h3>
                         <p><?php echo $details['total_mandalams']; ?></p>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($details['total_localbodies'])): ?>
-                    <div class="card">
+                    <div class="card custom-card">
                         <h3>Total Local Bodies</h3>
                         <p><?php echo $details['total_localbodies']; ?></p>
                     </div>
                 <?php endif; ?>
                 <?php if (isset($details['total_units'])): ?>
-                    <div class="card">
+                    <div class="card custom-card">
                         <h3>Total Units</h3>
                         <p><?php echo $details['total_units']; ?></p>
                     </div>
@@ -319,31 +340,31 @@ try {
 
             <h5 class="text-center mb-3">Collected Through Application</h5>
             <div class="summary-cards">
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Online</h3>
-                    <p>₹<?php echo number_format($details['total_collection_online'], 2); ?></p>
+                    <p>₹<?php echo number_format($totalOnlineCollected, 2); ?></p>
                 </div>
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Offline</h3>
-                    <p>₹<?php echo number_format($details['total_collection_offline'], 2); ?></p>
+                    <p>₹<?php echo number_format($totalCashCollected, 2); ?></p>
                 </div>
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Total Collected App</h3>
-                    <p>₹<?php echo number_format($details['total_collection_app'], 2); ?></p>
+                    <p>₹<?php echo number_format($totalCollectedMobile, 2); ?></p>
                 </div>
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Donors</h3>
-                    <p>-</p>
+                    <p><?php echo number_format($totalDonors); ?></p>
                 </div>
             </div>
 
             <h5 class="text-center mb-3">Collected Through Coupons</h5>
             <div class="summary-cards">
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Total Collected</h3>
-                    <p>₹<?php echo number_format($details['total_collection_paper'], 2); ?></p>
+                    <p>₹<?php echo number_format($totalCollectedPaper, 2); ?></p>
                 </div>
-                <div class="card">
+                <div class="card custom-card">
                     <h3>Donors</h3>
                     <p>-</p>
                 </div>
@@ -416,6 +437,10 @@ try {
                                     <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <?php if (!empty($collections)): ?>
+                        <tfoot>
                             <tr class="table-info-row caption">
                                 <td colspan="12" class="">
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
@@ -438,96 +463,16 @@ try {
                                     </div>
                                 </td>
                             </tr>
-                        <?php endif; ?>
-                    </tbody>
+                        </tfoot>
+                    <?php endif; ?>
                 </table>
             </div>
         </div>
     </div>
-
-    <style>
-        .dashboard {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .breadcrumb {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .card h3 {
-            margin: 0 0 10px 0;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .card p {
-            margin: 0;
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 4px 16px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-view {
-            background: #007bff;
-            color: white;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-    </style>
 </body>
+
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const level = "<?php echo $level; ?>";
     const childLevel = "<?php echo $currentLevelChild; ?>";

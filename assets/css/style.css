@@ -13,10 +13,21 @@ body {
 
 table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate !important;
+    border-spacing: 0;
     margin-bottom: 0px !important;
+    border-radius: 8px !important;
+    border: 1px solid #ddd !important;
+    overflow: hidden;
+    /* Ensure the border radius is applied */
+    /* background: #000; */
 }
 
+th,
+tfoot {
+    background: #f8f9fa;
+    font-weight: 600;
+}
 
 th,
 td {
@@ -25,10 +36,35 @@ td {
     border-bottom: 1px solid #ddd !important;
 }
 
-th {
-    background: #f8f9fa;
-    font-weight: 600;
+/* 
+tr td:first-child {
+    border-left: 1px solid #ddd !important;
 }
+
+tr td:last-child {
+    border-right: 1px solid #ddd !important;
+
+}
+
+thead th:first-child {
+    border-top-left-radius: 8px !important;
+    border-left: 1px solid #ddd !important;
+}
+
+thead th:last-child {
+    border-top-right-radius: 8px !important;
+    border-right: 1px solid #ddd !important;
+}
+
+tfoot tr:last-child td:first-child {
+    border-bottom-left-radius: 8px !important;
+    border-left: 1px solid #ddd !important;
+}
+
+tfoot tr:last-child td:last-child {
+    border-bottom-right-radius: 8px !important;
+    border-right: 1px solid #ddd !important;
+} */
 
 .error {
     color: red;
@@ -79,15 +115,8 @@ select {
     border-radius: 6px !important;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.table-info-row {
-    border-bottom: 0px none transparent !important;
+.table-info-row td{
+    border: 0px none transparent !important;
 }
 
 .table-info-row td {
@@ -155,4 +184,31 @@ select {
     border-radius: 6px !important;
     text-decoration: none !important;
     font-size: 14px !important;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    /* align-items: center; */
+    margin-bottom: 30px;
+}
+
+.breadcrumb {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+
+    @media (max-width: 992px) {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+        @media (max-width: 668px) {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+    }
 }

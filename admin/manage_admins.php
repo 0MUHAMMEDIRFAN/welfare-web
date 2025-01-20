@@ -300,106 +300,110 @@ try {
             </form>
         </div>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>s Management
-                </h5>
-                <button class="btn btn-primary btn-sm" onclick="window.location.href='add_admin.php?type=<?php echo $managingRole; ?>'">
-                    Add <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>
-                </button>
+        <div class="mb-4">
+            <div class="card mb-1">
+                <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>s Management
+                    </h5>
+                    <button class="btn btn-primary btn-sm" onclick="window.location.href='add_admin.php?type=<?php echo $managingRole; ?>'">
+                        Add <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User Name</th>
+                            <th><?php echo ucfirst($singularTableName); ?></th>
+                            <th>Phone</th>
+                            <th>createdAt</th>
+                            <th class="text-center" style="width: 70px;">Status</th>
+                            <th class="text-end" style="width: 130px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
                             <tr>
-                                <th>ID</th>
-                                <th>User Name</th>
-                                <th><?php echo ucfirst($singularTableName); ?></th>
-                                <th>Phone</th>
-                                <th>createdAt</th>
-                                <th class="text-center" style="width: 70px;">Status</th>
-                                <th class="text-end" style="width: 130px;">Actions</th>
+                                <td colspan="12" class="text-center">No records found</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($items)): ?>
+                        <?php else: ?>
+                            <?php foreach ($items as $place): ?>
                                 <tr>
-                                    <td colspan="12" class="text-center">No records found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($items as $place): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($place['admin_id']); ?></td>
-                                        <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
-                                        <td><?php echo htmlspecialchars($place['name']); ?></td>
-                                        <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
-                                        <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_created_at']) : '-'; ?></td>
-                                        <td class="text-center" style="width: 40px;">
+                                    <td><?php echo htmlspecialchars($place['admin_id']); ?></td>
+                                    <td><?php echo $place['admin_name'] ? htmlspecialchars($place['admin_name']) : '-'; ?></td>
+                                    <td><?php echo htmlspecialchars($place['name']); ?></td>
+                                    <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_phone']) : '-'; ?></td>
+                                    <td><?php echo $place['admin_phone'] ? htmlspecialchars($place['admin_created_at']) : '-'; ?></td>
+                                    <td class="text-center" style="width: 40px;">
+                                        <?php if ($place['admin_id']): ?>
+                                            <span class="badge <?php echo $place['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
+                                                <?php echo $place['is_active'] ? 'Active' : 'Inactive'; ?>
+                                            </span>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-end" style="width: 130px;">
+                                        <div class="action-buttons">
                                             <?php if ($place['admin_id']): ?>
-                                                <span class="badge <?php echo $place['is_active'] ? 'bg-success' : 'bg-danger'; ?>">
-                                                    <?php echo $place['is_active'] ? 'Active' : 'Inactive'; ?>
-                                                </span>
-                                            <?php else: ?>
-                                                -
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-end" style="width: 130px;">
-                                            <div class="action-buttons">
-                                                <?php if ($place['admin_id']): ?>
-                                                    <!-- <button onclick="showMpinModal(<?php echo $place['admin_id']; ?>)"
+                                                <!-- <button onclick="showMpinModal(<?php echo $place['admin_id']; ?>)"
                                                         class="btn btn-warning btn-sm">
                                                         <i class="fas fa-key"></i>
                                                     </button> -->
-                                                    <form method="POST" style="display: inline;">
-                                                        <input type="hidden" name="admin_id" value="<?php echo $place['admin_id']; ?>">
-                                                        <input type="hidden" name="status" value="<?php echo $place['is_active']; ?>">
-                                                        <button type="submit" name="toggle_status"
-                                                            class="btn btn-<?php echo $place['is_active'] ? 'danger' : 'success'; ?> btn-sm"
-                                                            onclick="return confirm('Are you sure you want to <?php echo $place['is_active'] ? 'deactivate' : 'activate'; ?> this admin?')">
-                                                            <i class="fas fa-<?php echo $place['is_active'] ? 'ban' : 'check'; ?>"></i>
-                                                        </button>
-                                                    </form>
-                                                    <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>&edit=1&admin_id=<?php echo $place['admin_id']; ?>" class="btn btn-primary btn-sm">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                <?php else: ?>
-                                                    <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>"
-                                                        class="btn btn-success btn-sm">
-                                                        <i class="fas fa-plus"></i> Add Admin
-                                                    </a>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <tr class="table-info-row caption">
-                                    <td colspan="12" class="">
-                                        <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
-                                            <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
-                                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
-                                                    ← Prev
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="admin_id" value="<?php echo $place['admin_id']; ?>">
+                                                    <input type="hidden" name="status" value="<?php echo $place['is_active']; ?>">
+                                                    <button type="submit" name="toggle_status"
+                                                        class="btn btn-<?php echo $place['is_active'] ? 'danger' : 'success'; ?> btn-sm"
+                                                        onclick="return confirm('Are you sure you want to <?php echo $place['is_active'] ? 'deactivate' : 'activate'; ?> this admin?')">
+                                                        <i class="fas fa-<?php echo $place['is_active'] ? 'ban' : 'check'; ?>"></i>
+                                                    </button>
+                                                </form>
+                                                <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>&edit=1&admin_id=<?php echo $place['admin_id']; ?>" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-edit"></i>
                                                 </a>
-                                                <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
-                                                    <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                        <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
-                                                            Page <?php echo $i; ?>
-                                                        </option>
-                                                    <?php endfor; ?>
-                                                </select>
-                                                <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
-                                                    Next →
+                                            <?php else: ?>
+                                                <a href="add_admin.php?type=<?php echo $managingRole; ?>&place_id=<?php echo $place['id']; ?>"
+                                                    class="btn btn-success btn-sm">
+                                                    <i class="fas fa-plus"></i> Add Admin
                                                 </a>
-                                            </div>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                    <?php if (!empty($items)): ?>
+                        <tfoot>
+                            <tr class="table-info-row caption">
+                                <td colspan="12" class="">
+                                    <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
+                                        <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
+                                        <div class="d-flex justify-content-center align-items-center gap-2">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                                ← Prev
+                                            </a>
+                                            <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
+                                                <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
+                                                    <option value="?type=<?php echo $managingRole; ?>&page=<?php echo $i; ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                        Page <?php echo $i; ?>
+                                                    </option>
+                                                <?php endfor; ?>
+                                            </select>
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                                Next →
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    <?php endif; ?>
+                </table>
             </div>
         </div>
     </div>
@@ -489,204 +493,204 @@ try {
                             <label class="form-label">New MPIN</label>
                             <input type="password" name="new_mpin" class="form-control"
                                 required minlength="4" maxlength="6" pattern="\d{4,6}">
-                            <div class="form-text">MPIN must be 4-6 digits</div>
+                                <div class="form-text">MPIN must be 4-6 digits</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" name="update_mpin" class="btn btn-primary">Update MPIN</button>
                     </div>
                 </form>
             </div>
         </div>
     </div> -->
+</body>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        // function showMpinModal(adminId) {
-        //     document.getElementById('modal_admin_id').value = adminId;
-        //     var mpinModal = new bootstrap.Modal(document.getElementById('mpinModal'));
-        //     mpinModal.show();
-        // }
-        $(document).ready(function() {
-            const currentLevel = '<?php echo $canManage; ?>';
-            const MainLevel = '<?php echo $currentManages[0]; ?>'
-            const currentUserLevel = '<?php echo $currentUserRole; ?>';
-            const currentTable = '<?php echo $currentTable; ?>';
-            // console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // function showMpinModal(adminId) {
+    //     document.getElementById('modal_admin_id').value = adminId;
+    //     var mpinModal = new bootstrap.Modal(document.getElementById('mpinModal'));
+    //     mpinModal.show();
+    // }
+    $(document).ready(function() {
+        const currentLevel = '<?php echo $canManage; ?>';
+        const MainLevel = '<?php echo $currentManages[0]; ?>'
+        const currentUserLevel = '<?php echo $currentUserRole; ?>';
+        const currentTable = '<?php echo $currentTable; ?>';
+        // console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
 
-            function showLoading(formId, spinnerId) {
-                $(`#${spinnerId}`).removeClass('d-none');
-                $(`#${formId}`).addClass('d-none');
-            }
+        function showLoading(formId, spinnerId) {
+            $(`#${spinnerId}`).removeClass('d-none');
+            $(`#${formId}`).addClass('d-none');
+        }
 
-            function hideLoading(formId, spinnerId) {
-                $(`#${spinnerId}`).addClass('d-none');
-                $(`#${formId}`).removeClass('d-none');
-            }
+        function hideLoading(formId, spinnerId) {
+            $(`#${spinnerId}`).addClass('d-none');
+            $(`#${formId}`).removeClass('d-none');
+        }
 
-            // After selecting orgs
-            $('#filter_District').change(function() {
-                var districtId = $(this).val();
-                if (districtId) {
-                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
-                    loadMandalams(districtId).then((response) => {
-                        let mandalams = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Mandalam</option>';
-                        if (mandalams.length) {
-                            mandalams.forEach(function(mandalam) {
-                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
-                        }
-                        $('#filter_Mandalam').html(options);
-                    }).catch((error) => {
-                        $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
-                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                    });
-                } else {
-                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            $('#filter_Mandalam').change(function() {
-                if ($(this).val()) {
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
-                    loadLocalbodies($(this).val()).then((response) => {
-                        let localbodies = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Localbody</option>';
-                        if (localbodies.length) {
-                            localbodies.forEach(function(localbody) {
-                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
-                        }
-                        $('#filter_Localbody').html(options);
-                    }).catch((error) => {
-                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
-                    });
-                } else {
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            $('#filter_Localbody').change(function() {
-                if ($(this).val()) {
-                    $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Loading Units...</option>');
-                    loadUnits($(this).val()).then((response) => {
-                        let units = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Unit</option>';
-                        if (units.length) {
-                            units.forEach(function(unit) {
-                                options += `<option value="${unit.id}">${unit.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Units Under Selected Localbody</option>`
-                        }
-                        $('#filter_Unit').html(options);
-                    }).catch((error) => {
-                        $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Error Loading Units</option>');
-                    });
-                } else {
-                    $('#filter_Unit').html('<option value="" hidden>Select Unit</option>');
-                }
-            });
-
-            // Filter Table
-            $('#filterForm').submit(function(event) {
-                event.preventDefault();
-                // const name = $('#item_name').val();
-                // const target = $('#item_target').val();
-                const $btn = $("#saveFilterBtn");
-
-                // Get type if it's a local body  
-                // const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
-
-                // if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
-                //     alert('Please fill all fields');
-                //     return;
-                // }
-                const formData = $(this).serializeArray();
-                const url = new URL(window.location.href);
-                const params = new URLSearchParams(url.search);
-
-                formData.forEach(field => {
-                    if (field.value) {
-                        params.set(field.name, field.value);
+        // After selecting orgs
+        $('#filter_District').change(function() {
+            var districtId = $(this).val();
+            if (districtId) {
+                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                loadMandalams(districtId).then((response) => {
+                    let mandalams = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Mandalam</option>';
+                    if (mandalams.length) {
+                        mandalams.forEach(function(mandalam) {
+                            options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                        });
                     } else {
-                        params.delete(field.name);
+                        options += `<option value="" disabled>No Mandalams Under Selected District</option>`
                     }
+                    $('#filter_Mandalam').html(options);
+                }).catch((error) => {
+                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
                 });
-
-                window.location.href = `${url.pathname}?${params.toString()}`;
-                console.log(`${url.pathname}?${params.toString()}`);
-
-                showLoading('filterForm', 'filterLoadingSpinner');
-                $btn.prop('disabled', true);
-
-
-
-            });
-
-            function loadMandalams(districtId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: 'ajax/get_mandalams.php',
-                        method: 'GET',
-                        data: {
-                            district_id: districtId
-                        },
-                        success: function(response) {
-                            resolve(response);
-                        },
-                        error: function(xhr, status, error) {
-                            reject(error);
-                        }
-                    });
-                });
-            }
-
-            function loadLocalbodies(mandalamId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: 'ajax/get_localbodies.php',
-                        method: 'GET',
-                        data: {
-                            mandalam_id: mandalamId
-                        },
-                        success: function(response) {
-                            resolve(response);
-                        },
-                        error: function(xhr, status, error) {
-                            reject(error);
-                        }
-                    });
-                });
-            }
-
-            function loadUnits(localbodyId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: 'ajax/get_units.php',
-                        method: 'GET',
-                        data: {
-                            localbody_id: localbodyId
-                        },
-                        success: function(response) {
-                            resolve(response);
-                        },
-                        error: function(xhr, status, error) {
-                            reject(error);
-                        }
-                    });
-                });
+            } else {
+                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
             }
         });
-    </script>
-</body>
+
+        $('#filter_Mandalam').change(function() {
+            if ($(this).val()) {
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
+                loadLocalbodies($(this).val()).then((response) => {
+                    let localbodies = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Localbody</option>';
+                    if (localbodies.length) {
+                        localbodies.forEach(function(localbody) {
+                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
+                    }
+                    $('#filter_Localbody').html(options);
+                }).catch((error) => {
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                });
+            } else {
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+
+        $('#filter_Localbody').change(function() {
+            if ($(this).val()) {
+                $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Loading Units...</option>');
+                loadUnits($(this).val()).then((response) => {
+                    let units = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Unit</option>';
+                    if (units.length) {
+                        units.forEach(function(unit) {
+                            options += `<option value="${unit.id}">${unit.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Units Under Selected Localbody</option>`
+                    }
+                    $('#filter_Unit').html(options);
+                }).catch((error) => {
+                    $('#filter_Unit').html('<option value="" hidden>Select Unit</option><option value="" disabled>Error Loading Units</option>');
+                });
+            } else {
+                $('#filter_Unit').html('<option value="" hidden>Select Unit</option>');
+            }
+        });
+
+        // Filter Table
+        $('#filterForm').submit(function(event) {
+            event.preventDefault();
+            // const name = $('#item_name').val();
+            // const target = $('#item_target').val();
+            const $btn = $("#saveFilterBtn");
+
+            // Get type if it's a local body  
+            // const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
+
+            // if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
+            //     alert('Please fill all fields');
+            //     return;
+            // }
+            const formData = $(this).serializeArray();
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+
+            formData.forEach(field => {
+                if (field.value) {
+                    params.set(field.name, field.value);
+                } else {
+                    params.delete(field.name);
+                }
+            });
+
+            window.location.href = `${url.pathname}?${params.toString()}`;
+            console.log(`${url.pathname}?${params.toString()}`);
+
+            showLoading('filterForm', 'filterLoadingSpinner');
+            $btn.prop('disabled', true);
+
+
+
+        });
+
+        function loadMandalams(districtId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'ajax/get_mandalams.php',
+                    method: 'GET',
+                    data: {
+                        district_id: districtId
+                    },
+                    success: function(response) {
+                        resolve(response);
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        function loadLocalbodies(mandalamId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'ajax/get_localbodies.php',
+                    method: 'GET',
+                    data: {
+                        mandalam_id: mandalamId
+                    },
+                    success: function(response) {
+                        resolve(response);
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        function loadUnits(localbodyId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'ajax/get_units.php',
+                    method: 'GET',
+                    data: {
+                        localbody_id: localbodyId
+                    },
+                    success: function(response) {
+                        resolve(response);
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+    });
+</script>
 
 </html>
