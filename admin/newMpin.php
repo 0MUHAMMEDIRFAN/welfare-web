@@ -15,6 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SET NEW MPIN</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../index.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,119 +37,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </form>
         <div style="text-align: center; margin-top: 20px;">
-            <a id="backLogin" href="../index.php" class="btn btn-secondary">← Go Back to Login Page</a>
+            <a id="backLogin" href="../index.php" class="btn btn-secondary">← Login Page</a>
 
         </div>
     </div>
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin-inline: auto;
-            margin-top: 40px;
-            margin-bottom: 40px;
-            /* margin: 100px auto; */
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .error {
-            color: #dc3545;
-            padding: 10px;
-            margin-bottom: 20px;
-            background: #ffe6e6;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        form div {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-        }
-
-        input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background: #45a049;
-        }
-
-        .custom_button {
-            max-width: 340px;
-            width: 100%;
-        }
-
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-
-        .banner-logo {
-            max-height: 100px;
-            object-fit: contain;
-            margin: 2rem auto;
-        }
-
-        .company-logo {
-            max-height: 60px;
-            object-fit: contain;
-        }
-
-        .footer {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 1rem 0;
-            text-align: center;
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .copyright {
-            color: #6c757d;
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-
-        .login-title {
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-    </style>
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     function togglePasswordVisibility(event) {
         var input = document.getElementById("new_mpin");

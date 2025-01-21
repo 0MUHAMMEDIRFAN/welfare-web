@@ -47,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <title>Verify Donation</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="index.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 </head>
@@ -73,80 +74,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <button class="" type="submit">Verify</button>
         </form>
         <div style="text-align: center; margin-top: 20px;">
-            <a href="index.php" class="btn btn-secondary">← Go Back to Login Page</a>
+            <a href="index.php" class="btn btn-secondary">← Login Page</a>
         </div>
     </div>
-
-    <style>
-        .login-container {
-            max-width: 600px;
-            margin-inline: auto;
-            margin-top: 40px;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .error {
-            color: #dc3545;
-            padding: 10px;
-            margin-bottom: 20px;
-            background: #ffe6e6;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        form div {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-        }
-
-        input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background: #45a049;
-        }
-
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-    </style>
 
 </body>
 

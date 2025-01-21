@@ -36,39 +36,25 @@ td {
     border-bottom: 1px solid #ddd !important;
 }
 
-/* 
-tr td:first-child {
-    border-left: 1px solid #ddd !important;
-}
-
-tr td:last-child {
-    border-right: 1px solid #ddd !important;
-
-}
-
-thead th:first-child {
-    border-top-left-radius: 8px !important;
-    border-left: 1px solid #ddd !important;
-}
-
-thead th:last-child {
-    border-top-right-radius: 8px !important;
-    border-right: 1px solid #ddd !important;
-}
-
-tfoot tr:last-child td:first-child {
-    border-bottom-left-radius: 8px !important;
-    border-left: 1px solid #ddd !important;
-}
-
-tfoot tr:last-child td:last-child {
-    border-bottom-right-radius: 8px !important;
-    border-right: 1px solid #ddd !important;
+/* tbody tr:first-child:last-child td {
+    border-bottom: 0px none transparent !important;
 } */
 
 .error {
-    color: red;
+    color: #dc3545;
     margin-bottom: 10px;
+    background: #ffe6e6;
+    text-align: center;
+}
+
+.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    text-align: center;
 }
 
 form div {
@@ -78,6 +64,7 @@ form div {
 label {
     display: block;
     margin-bottom: 5px;
+    color: #666;
 }
 
 input,
@@ -86,6 +73,7 @@ select {
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
+    border-radius: 6px !important;
 }
 
 button {
@@ -93,7 +81,7 @@ button {
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px !important;
     cursor: pointer;
 }
 
@@ -110,12 +98,12 @@ a:hover {
     text-decoration: underline;
 }
 
-input,
-select {
-    border-radius: 6px !important;
+.table td {
+    vertical-align: middle;
 }
 
-.table-info-row td{
+
+.table-info-row td {
     border: 0px none transparent !important;
 }
 
@@ -190,7 +178,7 @@ select {
     display: flex;
     justify-content: space-between;
     /* align-items: center; */
-    margin-bottom: 30px;
+    margin-bottom: 16px;
 }
 
 .breadcrumb {
@@ -211,4 +199,23 @@ select {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         }
     }
+}
+
+.action-buttons {
+    white-space: nowrap;
+}
+
+
+
+::-webkit-scrollbar {
+    background: #fff;
+    position: absolute;
+    width: .3em;
+    height: 5px;
+    padding: 0;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #BDBEC0;
+    border-radius: 5px;
 }

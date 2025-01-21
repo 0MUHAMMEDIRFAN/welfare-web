@@ -1,0 +1,85 @@
+.login-container {
+    max-width: 400px;
+    margin-inline: auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    /* margin: 100px auto; */
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.custom_button {
+    max-width: 340px;
+    width: 100%;
+}
+
+
+.banner-logo {
+    max-height: 100px;
+    object-fit: contain;
+    margin: 2rem auto;
+}
+
+.company-logo {
+    max-height: 60px;
+    object-fit: contain;
+}
+
+.footer {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem 0;
+    text-align: center;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.copyright {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.login-container {
+    max-width: 400px;
+    margin-inline: auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    /* margin: 100px auto; */
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.error {
+    color: #dc3545;
+    padding: 10px;
+    margin-bottom: 20px;
+    background: #ffe6e6;
+    border-radius: 4px;
+    text-align: center;
+}
+
+button {
+    width: 100%;
+}
+
+button:hover {
+    background: #45a049;
+}
+
+
+h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px !important;
+}
+
+
+.login-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}

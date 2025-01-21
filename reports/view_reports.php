@@ -11,6 +11,29 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 $totalItems = 0;
 
+
+// Filter options
+$filterOptions = [];
+if (isset($_GET['localbody']) && in_array('localbody_admin', $currentManages)) {
+    $filterOptions['localbody_id'] = $_GET['localbody'];
+} else if (isset($_GET['mandalam']) && in_array('mandalam_admin', $currentManages)) {
+    $filterOptions['mandalam_id'] = $_GET['mandalam'];
+} else if (isset($_GET['district']) && in_array('district_admin', $currentManages)) {
+    $filterOptions['district_id'] = $_GET['district'];
+}
+
+// Build filter query
+$filterQuery = '';
+$filterParams = '';
+$filteredText = "";
+foreach ($filterOptions as $field => $value) {
+    $fieldText =  str_replace('_id', '', $field);
+    $filterQuery .= " AND t.$field = :$field";
+    $filterParams .= "&$fieldText=$value";
+    $filteredText = "Filtered By $fieldText";
+}
+
+
 $level = $_GET['level'] ?? '';
 $id = $_GET['id'] ?? '';
 $parent_id = $_GET['parent_id'] ?? '';
@@ -67,39 +90,45 @@ $currentLevelPerm = $levelHierarchy[$level];
 $currentLevelChild = $currentLevelPerm['child'][0];
 $currentLevelChildId = $currentLevelPerm['child'][0] . '_id';
 
+$managingRole = '';
+
+$currentManages = $currentLevelPerm['child'];
+$mainTables = $currentLevelPerm['child_tables'];
+$mainParentFields = $currentLevelPerm['parent_field'];
+
 try {
     // Get the current level details  
     $levelQuery = match ($level) {
-        'district' => "SELECT d.*,   
-            (SELECT COUNT(*) FROM mandalams WHERE district_id = d.id) as total_mandalams,  
+        'district' => "SELECT di.*,   
+            (SELECT COUNT(*) FROM mandalams WHERE district_id = di.id) as total_mandalams,  
             (SELECT COUNT(DISTINCT l.id) FROM localbodies l   
              JOIN mandalams m ON l.mandalam_id = m.id   
-             WHERE m.district_id = d.id) as total_localbodies,  
+             WHERE m.district_id = di.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
              JOIN mandalams m ON l.mandalam_id = m.id   
-             WHERE m.district_id = d.id) as total_units,
+             WHERE m.district_id = di.id) as total_units,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id) as total_collection_paper,
+             WHERE m.district_id = di.id) as total_collection_paper,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id AND d.payment_type = 'CASH') as total_collection_offline,
+             WHERE m.district_id = di.id AND d.payment_type = 'CASH') as total_collection_offline,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id AND d.payment_type != 'CASH') as total_collection_online,
+             WHERE m.district_id = di.id AND d.payment_type != 'CASH') as total_collection_online,
             (SELECT COUNT(DISTINCT d.id) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = d.id) as total_donors
-            FROM districts d WHERE d.id = ?",
+             WHERE m.district_id = di.id) as total_donors
+            FROM districts di WHERE di.id = ?",
         'mandalam' => "SELECT m.*, d.name as district_name,  
             (SELECT COUNT(*) FROM localbodies WHERE mandalam_id = m.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
@@ -371,8 +400,11 @@ try {
             </div>
 
 
-            <div class="content table-responsive">
+            <div class="d-flex justify-content-between">
                 <h3>Collection Reports</h3>
+                
+            </div>
+            <div class="content table-responsive">
                 <table>
                     <thead>
                         <tr>
@@ -469,8 +501,72 @@ try {
             </div>
         </div>
     </div>
-</body>
 
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Filter <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="filterLoadingSpinner" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <form id="filterForm">
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control">
+                        </div>
+                        <?php
+                        $i = 0;
+                        while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
+                            $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
+                            echo '<div class="mb-3">
+                            <label class="form-label">' . $mainName . '</label>
+                                <select name="' . strtolower($mainName) . '" id="filter_' . $mainName . '" class="form-control" ' . ($i == 0 ? "required" : "") . '>
+                                    <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
+                            if ($i == 0) {
+                                $mainTable = $mainTables[$i];
+                                $mainParentField = $mainParentFields[$i];
+                                $query = "SELECT id, name FROM {$mainTable} WHERE 1";
+                                if ($mainParentField) {
+                                    $query .= " AND {$mainParentField} = ?";
+                                    $stmt = $pdo->prepare($query);
+                                    $stmt->execute([$_SESSION['user_level_id']]);
+                                } else {
+                                    $stmt = $pdo->query($query);
+                                }
+                                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                    $selected = '';
+                                    echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
+                                }
+                            }
+                            echo '</select>
+                                <div class="invalid-feedback">' . $mainName . ' is required</div>
+                            </div>';
+                            $i++;
+                        }
+                        ?>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveFilterBtn">Submit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
 <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>

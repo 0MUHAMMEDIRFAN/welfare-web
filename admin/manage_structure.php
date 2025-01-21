@@ -194,7 +194,7 @@ try {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#">Organization Structure Management</a>
+            <a class="navbar-brand" href="#">Organization Management</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -566,363 +566,405 @@ try {
         </div>
     </div>
 
-    <style>
-        .table td {
-            vertical-align: middle;
+</body>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        const currentLevel = '<?php echo $canManage; ?>';
+        const MainLevel = '<?php echo $currentManages[0]; ?>'
+        const currentUserLevel = '<?php echo $currentUserRole; ?>';
+        const currentTable = '<?php echo $currentTable; ?>';
+        // console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
+
+        function showLoading(formId, spinnerId) {
+            $(`#${spinnerId}`).removeClass('d-none');
+            $(`#${formId}`).addClass('d-none');
         }
 
-        .action-buttons {
-            white-space: nowrap;
+        function hideLoading(formId, spinnerId) {
+            $(`#${spinnerId}`).addClass('d-none');
+            $(`#${formId}`).removeClass('d-none');
         }
-    </style>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            const currentLevel = '<?php echo $canManage; ?>';
-            const MainLevel = '<?php echo $currentManages[0]; ?>'
-            const currentUserLevel = '<?php echo $currentUserRole; ?>';
-            const currentTable = '<?php echo $currentTable; ?>';
-            // console.log(currentLevel, MainLevel, currentUserLevel, currentTable)
-
-            function showLoading(formId, spinnerId) {
-                $(`#${spinnerId}`).removeClass('d-none');
-                $(`#${formId}`).addClass('d-none');
-            }
-
-            function hideLoading(formId, spinnerId) {
-                $(`#${spinnerId}`).addClass('d-none');
-                $(`#${formId}`).removeClass('d-none');
-            }
-
-            // After selecting orgs
-            $('#item_District').change(async function() {
-                var districtId = $(this).val();
-                if (districtId) {
-                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
-                    loadMandalams(districtId).then((response) => {
-                        let mandalams = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Mandalam</option>';
-                        if (mandalams.length) {
-                            mandalams.forEach(function(mandalam) {
-                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
-                        }
-                        $('#item_Mandalam').html(options);
-                    }).catch((error) => {
-                        $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
-                        $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                    });
-                } else {
-                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-            $('#item_Mandalam').change(function() {
-                if ($(this).val()) {
-                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
-                    loadLocalbodies($(this).val()).then((response) => {
-                        let localbodies = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Localbody</option>';
-                        if (localbodies.length) {
-                            localbodies.forEach(function(localbody) {
-                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
-                        }
-                        $('#item_Localbody').html(options);
-                    }).catch((error) => {
-                        $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
-                    });
-                } else {
-                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            $('#edit_item_District').change(async function() {
-                var districtId = $(this).val();
-                if (districtId) {
-                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
-                    loadMandalams(districtId).then((response) => {
-                        let mandalams = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Mandalam</option>';
-                        if (mandalams.length) {
-                            mandalams.forEach(function(mandalam) {
-                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
-                        }
-                        $('#edit_item_Mandalam').html(options);
-                    }).catch((error) => {
-                        $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam...</option>');
-                        $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                    });
-                } else {
-                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-            $('#edit_item_Mandalam').change(function() {
-                if ($(this).val()) {
-                    loadLocalbodies($(this).val()).then((response) => {
-                        let localbodies = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Localbody</option>';
-                        if (localbodies.length) {
-
-                            localbodies.forEach(function(localbody) {
-                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
-                        }
-                        $('#edit_item_Localbody').html(options);
-                    }).catch((error) => {
-                        $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
-                    });
-                } else {
-                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            $('#filter_District').change(async function() {
-                var districtId = $(this).val();
-                if (districtId) {
-                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
-                    loadMandalams(districtId).then((response) => {
-                        let mandalams = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Mandalam</option>';
-                        if (mandalams.length) {
-                            mandalams.forEach(function(mandalam) {
-                                options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Mandalams Under Selected District</option>`
-                        }
-                        $('#filter_Mandalam').html(options);
-                    }).catch((error) => {
-                        $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
-                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                    });
-                } else {
-                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            $('#filter_Mandalam').change(function() {
-                if ($(this).val()) {
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
-                    loadLocalbodies($(this).val()).then((response) => {
-                        let localbodies = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Localbody</option>';
-                        if (localbodies.length) {
-                            localbodies.forEach(function(localbody) {
-                                options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                            });
-                        } else {
-                            options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
-                        }
-                        $('#filter_Localbody').html(options);
-                    }).catch((error) => {
-                        $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
-                    });
-                } else {
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-            });
-
-            // Add Item  
-            $('#addItemForm').submit(function() {
-                const name = $('#item_name').val();
-                const target = $('#item_target').val();
-                const $btn = $("#saveItemBtn");
-
-                // Get type if it's a local body  
-                const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
-
-                if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
-                    alert('Please fill all fields');
-                    return;
-                }
-
-                showLoading('addItemForm', 'addLoadingSpinner');
-                $btn.prop('disabled', true);
-
-                const data = {
-                    action: 'add',
-                    name: name,
-                    target_amount: target,
-                    level: currentLevel,
-                    table: currentTable
-                };
-                if (currentLevel === MainLevel) {
-                    data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
-                    data.parent_field = '<?php echo $parentField; ?>';
-                } else if (currentLevel === 'mandalam_admin') {
-                    const district = $('#item_District').val();
-                    if (!district) {
-                        alert('Please select a district');
-                        return;
-                    }
-                    data.parent_id = district;
-                    data.parent_field = "district_id";
-                } else if (currentLevel === 'localbody_admin') {
-                    const mandalam = $('#item_Mandalam').val();
-                    if (!mandalam) {
-                        alert('Please select a mandalam');
-                        return;
-                    }
-                    data.parent_id = mandalam;
-                    data.parent_field = "mandalam_id";
-                } else if (currentLevel === 'unit_admin') {
-                    const localbody = $('#item_Localbody').val();
-                    if (!localbody) {
-                        alert('Please select a localbody');
-                        return;
-                    }
-                    data.parent_id = localbody;
-                    data.parent_field = "localbody_id";
-                }
-                // Add type if it's a local body  
-                if (currentLevel === 'localbody_admin') {
-                    data.type = type;
-                }
-
-                $.ajax({
-                    url: 'ajax/ajax_manage_structure.php',
-                    method: 'POST',
-                    dataType: 'json',
-                    data: data,
-                    success: function(response) {
-                        if (response.success) {
-                            location.href = '?type=<?php echo $managingRole; ?>';
-                        } else {
-                            alert('Error: ' + (response.message || 'Unknown error'));
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.log('AJAX Error:', {
-                            status: status,
-                            error: error,
-                            response: xhr.responseText
-                        });
-                        alert('Error adding item. Please check console for details.');
-                    },
-                    complete: function() {
-                        hideLoading('addItemForm', 'addLoadingSpinner');
-                        $btn.prop('disabled', false);
-                    }
-                });
-            });
-
-            // Edit Item  
-            $('.edit-item').click(function() {
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                const target = $(this).data('target');
-                const localbody_id = $(this).data('localbody');
-                const mandalam_id = $(this).data('mandalam');
-                const district_id = $(this).data('district');
-
-                $('#edit_item_id').val(id);
-                $('#edit_item_name').val(name);
-                $('#edit_item_target').val(target);
-                $('#edit_item_Localbody').val(localbody_id);
-                $('#edit_item_District').val(district_id);
-
-                // console.log(district_id)
-
-                if (mandalam_id) {
-                    loadLocalbodies(mandalam_id).then((response) => {
-                        let localbodies = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Localbody</option>';
-                        localbodies.forEach(function(localbody) {
-                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                        });
-                        $('#edit_item_Localbody').html(options);
-                        $('#edit_item_Localbody').val(localbody_id);
-                    }).catch((error) => {
-                        $('#edit_item_Localbody').html('<option value="" hidden>Error Loading Localbody</option>');
-                    });
-                } else {
-                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                }
-                if (district_id) {
-                    loadMandalams(district_id).then((response) => {
-                        let mandalams = JSON.parse(response);
-                        let options = '<option value="" hidden>Select Mandalam</option>';
+        // After selecting orgs
+        $('#item_District').change(async function() {
+            var districtId = $(this).val();
+            if (districtId) {
+                $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                loadMandalams(districtId).then((response) => {
+                    let mandalams = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Mandalam</option>';
+                    if (mandalams.length) {
                         mandalams.forEach(function(mandalam) {
                             options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
                         });
-                        $('#edit_item_Mandalam').html(options);
-                        $('#edit_item_Mandalam').val(mandalam_id);
-                    }).catch((error) => {
-                        $('#edit_item_Mandalam').html('<option value="" hidden>Error Loading Mandalam</option>');
-                    });
-                } else {
-                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                    } else {
+                        options += `<option value="" disabled>No Mandalams Under Selected District</option>`
+                    }
+                    $('#item_Mandalam').html(options);
+                }).catch((error) => {
+                    $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                });
+            } else {
+                $('#item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+        $('#item_Mandalam').change(function() {
+            if ($(this).val()) {
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
+                loadLocalbodies($(this).val()).then((response) => {
+                    let localbodies = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Localbody</option>';
+                    if (localbodies.length) {
+                        localbodies.forEach(function(localbody) {
+                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
+                    }
+                    $('#item_Localbody').html(options);
+                }).catch((error) => {
+                    $('#item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                });
+            } else {
+                $('#item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+
+        $('#edit_item_District').change(async function() {
+            var districtId = $(this).val();
+            if (districtId) {
+                $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                loadMandalams(districtId).then((response) => {
+                    let mandalams = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Mandalam</option>';
+                    if (mandalams.length) {
+                        mandalams.forEach(function(mandalam) {
+                            options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Mandalams Under Selected District</option>`
+                    }
+                    $('#edit_item_Mandalam').html(options);
+                }).catch((error) => {
+                    $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam...</option>');
+                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                });
+            } else {
+                $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+        $('#edit_item_Mandalam').change(function() {
+            if ($(this).val()) {
+                loadLocalbodies($(this).val()).then((response) => {
+                    let localbodies = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Localbody</option>';
+                    if (localbodies.length) {
+
+                        localbodies.forEach(function(localbody) {
+                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
+                    }
+                    $('#edit_item_Localbody').html(options);
+                }).catch((error) => {
+                    $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                });
+            } else {
+                $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+
+        $('#filter_District').change(async function() {
+            var districtId = $(this).val();
+            if (districtId) {
+                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+                loadMandalams(districtId).then((response) => {
+                    let mandalams = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Mandalam</option>';
+                    if (mandalams.length) {
+                        mandalams.forEach(function(mandalam) {
+                            options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Mandalams Under Selected District</option>`
+                    }
+                    $('#filter_Mandalam').html(options);
+                }).catch((error) => {
+                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+                });
+            } else {
+                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+
+        $('#filter_Mandalam').change(function() {
+            if ($(this).val()) {
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
+                loadLocalbodies($(this).val()).then((response) => {
+                    let localbodies = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Localbody</option>';
+                    if (localbodies.length) {
+                        localbodies.forEach(function(localbody) {
+                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                        });
+                    } else {
+                        options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
+                    }
+                    $('#filter_Localbody').html(options);
+                }).catch((error) => {
+                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+                });
+            } else {
+                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+        });
+
+        // Add Item  
+        $('#addItemForm').submit(function() {
+            const name = $('#item_name').val();
+            const target = $('#item_target').val();
+            const $btn = $("#saveItemBtn");
+
+            // Get type if it's a local body  
+            const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
+
+            if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            showLoading('addItemForm', 'addLoadingSpinner');
+            $btn.prop('disabled', true);
+
+            const data = {
+                action: 'add',
+                name: name,
+                target_amount: target,
+                level: currentLevel,
+                table: currentTable
+            };
+            if (currentLevel === MainLevel) {
+                data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                data.parent_field = '<?php echo $parentField; ?>';
+            } else if (currentLevel === 'mandalam_admin') {
+                const district = $('#item_District').val();
+                if (!district) {
+                    alert('Please select a district');
+                    return;
                 }
+                data.parent_id = district;
+                data.parent_field = "district_id";
+            } else if (currentLevel === 'localbody_admin') {
+                const mandalam = $('#item_Mandalam').val();
+                if (!mandalam) {
+                    alert('Please select a mandalam');
+                    return;
+                }
+                data.parent_id = mandalam;
+                data.parent_field = "mandalam_id";
+            } else if (currentLevel === 'unit_admin') {
+                const localbody = $('#item_Localbody').val();
+                if (!localbody) {
+                    alert('Please select a localbody');
+                    return;
+                }
+                data.parent_id = localbody;
+                data.parent_field = "localbody_id";
+            }
+            // Add type if it's a local body  
+            if (currentLevel === 'localbody_admin') {
+                data.type = type;
+            }
 
-                $('#editItemModal').modal('show');
+            $.ajax({
+                url: 'ajax/ajax_manage_structure.php',
+                method: 'POST',
+                dataType: 'json',
+                data: data,
+                success: function(response) {
+                    if (response.success) {
+                        location.href = '?type=<?php echo $managingRole; ?>';
+                    } else {
+                        alert('Error: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText
+                    });
+                    alert('Error adding item. Please check console for details.');
+                },
+                complete: function() {
+                    hideLoading('addItemForm', 'addLoadingSpinner');
+                    $btn.prop('disabled', false);
+                }
             });
+        });
 
-            // Update Item
-            $('#editItemForm').submit(function() {
-                const id = $('#edit_item_id').val();
-                const name = $('#edit_item_name').val();
-                const target = $('#edit_item_target').val();
-                // const place_id = $('#edit_item_target').val();
-                const $btn = $('#updateItemBtn');
+        // Edit Item  
+        $('.edit-item').click(function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const target = $(this).data('target');
+            const localbody_id = $(this).data('localbody');
+            const mandalam_id = $(this).data('mandalam');
+            const district_id = $(this).data('district');
+
+            $('#edit_item_id').val(id);
+            $('#edit_item_name').val(name);
+            $('#edit_item_target').val(target);
+            $('#edit_item_Localbody').val(localbody_id);
+            $('#edit_item_District').val(district_id);
+
+            // console.log(district_id)
+
+            if (mandalam_id) {
+                loadLocalbodies(mandalam_id).then((response) => {
+                    let localbodies = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Localbody</option>';
+                    localbodies.forEach(function(localbody) {
+                        options += `<option value="${localbody.id}">${localbody.name}</option>`;
+                    });
+                    $('#edit_item_Localbody').html(options);
+                    $('#edit_item_Localbody').val(localbody_id);
+                }).catch((error) => {
+                    $('#edit_item_Localbody').html('<option value="" hidden>Error Loading Localbody</option>');
+                });
+            } else {
+                $('#edit_item_Localbody').html('<option value="" hidden>Select Localbody</option>');
+            }
+            if (district_id) {
+                loadMandalams(district_id).then((response) => {
+                    let mandalams = JSON.parse(response);
+                    let options = '<option value="" hidden>Select Mandalam</option>';
+                    mandalams.forEach(function(mandalam) {
+                        options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+                    });
+                    $('#edit_item_Mandalam').html(options);
+                    $('#edit_item_Mandalam').val(mandalam_id);
+                }).catch((error) => {
+                    $('#edit_item_Mandalam').html('<option value="" hidden>Error Loading Mandalam</option>');
+                });
+            } else {
+                $('#edit_item_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+            }
+
+            $('#editItemModal').modal('show');
+        });
+
+        // Update Item
+        $('#editItemForm').submit(function() {
+            const id = $('#edit_item_id').val();
+            const name = $('#edit_item_name').val();
+            const target = $('#edit_item_target').val();
+            // const place_id = $('#edit_item_target').val();
+            const $btn = $('#updateItemBtn');
+
+            const data = {
+                action: 'update',
+                id: id,
+                name: name,
+                target_amount: target,
+                level: currentLevel,
+                table: currentTable
+            }
+            if (currentLevel === MainLevel) {
+                console.log("MainLevel")
+            } else if (currentLevel === 'mandalam_admin') {
+                const district = $('#edit_item_District').val();
+                if (!district) {
+                    alert('Please select a district');
+                    return;
+                }
+                data.parent_id = district;
+                data.parent_field = "district_id";
+            } else if (currentLevel === 'localbody_admin') {
+                const mandalam = $('#edit_item_Mandalam').val();
+                if (!mandalam) {
+                    alert('Please select a mandalam');
+                    return;
+                }
+                data.parent_id = mandalam;
+                data.parent_field = "mandalam_id";
+            } else if (currentLevel === 'unit_admin') {
+                const localbody = $('#edit_item_Localbody').val();
+                if (!localbody) {
+                    alert('Please select a localbody');
+                    return;
+                }
+                data.parent_id = localbody;
+                data.parent_field = "localbody_id";
+            }
+
+
+            if (!id || !name || !target) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            showLoading('editItemForm', 'editLoadingSpinner');
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: 'ajax/ajax_manage_structure.php',
+                method: 'POST',
+                dataType: 'json',
+                data,
+                success: function(response) {
+                    if (response.success) {
+                        location.href = '?type=<?php echo $managingRole; ?>';
+                    } else {
+                        alert('Error: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText
+                    });
+                    alert('Error updating item. Please check console for details.');
+                },
+                complete: function() {
+                    hideLoading('editItemForm', 'editLoadingSpinner');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // Delete Item
+        $('.delete-item').click(function() {
+            if (confirm('Are you sure you want to delete this item?')) {
+                const id = $(this).data('id');
+                const $btn = $(this);
 
                 const data = {
-                    action: 'update',
+                    action: 'delete',
                     id: id,
-                    name: name,
-                    target_amount: target,
                     level: currentLevel,
                     table: currentTable
                 }
-                if (currentLevel === MainLevel) {
-                    console.log("MainLevel")
-                } else if (currentLevel === 'mandalam_admin') {
-                    const district = $('#edit_item_District').val();
-                    if (!district) {
-                        alert('Please select a district');
-                        return;
-                    }
-                    data.parent_id = district;
-                    data.parent_field = "district_id";
-                } else if (currentLevel === 'localbody_admin') {
-                    const mandalam = $('#edit_item_Mandalam').val();
-                    if (!mandalam) {
-                        alert('Please select a mandalam');
-                        return;
-                    }
-                    data.parent_id = mandalam;
-                    data.parent_field = "mandalam_id";
-                } else if (currentLevel === 'unit_admin') {
-                    const localbody = $('#edit_item_Localbody').val();
-                    if (!localbody) {
-                        alert('Please select a localbody');
-                        return;
-                    }
-                    data.parent_id = localbody;
-                    data.parent_field = "localbody_id";
-                }
+
+                data.managing_role = "<?php echo $managingRole; ?>"
 
 
-                if (!id || !name || !target) {
-                    alert('Please fill all fields');
-                    return;
-                }
+                // <?php if ($parentField): ?>
+                // data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
+                // data.parent_field = '<?php echo $parentField; ?>';
+                // <?php endif; ?>
 
-                showLoading('editItemForm', 'editLoadingSpinner');
                 $btn.prop('disabled', true);
 
                 $.ajax({
@@ -943,137 +985,86 @@ try {
                             error: error,
                             response: xhr.responseText
                         });
-                        alert('Error updating item. Please check console for details.');
+                        alert('Error deleting item. Please check console for details.');
                     },
                     complete: function() {
-                        hideLoading('editItemForm', 'editLoadingSpinner');
                         $btn.prop('disabled', false);
                     }
                 });
-            });
+            }
+        });
 
-            // Delete Item
-            $('.delete-item').click(function() {
-                if (confirm('Are you sure you want to delete this item?')) {
-                    const id = $(this).data('id');
-                    const $btn = $(this);
+        // Filter Table
+        $('#filterForm').submit(function(event) {
+            event.preventDefault();
+            // const name = $('#item_name').val();
+            // const target = $('#item_target').val();
+            const $btn = $("#saveFilterBtn");
 
-                    const data = {
-                        action: 'delete',
-                        id: id,
-                        level: currentLevel,
-                        table: currentTable
-                    }
+            // Get type if it's a local body  
+            // const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
 
-                    data.managing_role = "<?php echo $managingRole; ?>"
+            // if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
+            //     alert('Please fill all fields');
+            //     return;
+            // }
+            const formData = $(this).serializeArray();
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
 
-
-                    // <?php if ($parentField): ?>
-                    // data.parent_id = <?php echo $_SESSION['user_level_id']; ?>;
-                    // data.parent_field = '<?php echo $parentField; ?>';
-                    // <?php endif; ?>
-
-                    $btn.prop('disabled', true);
-
-                    $.ajax({
-                        url: 'ajax/ajax_manage_structure.php',
-                        method: 'POST',
-                        dataType: 'json',
-                        data,
-                        success: function(response) {
-                            if (response.success) {
-                                location.href = '?type=<?php echo $managingRole; ?>';
-                            } else {
-                                alert('Error: ' + (response.message || 'Unknown error'));
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('AJAX Error:', {
-                                status: status,
-                                error: error,
-                                response: xhr.responseText
-                            });
-                            alert('Error deleting item. Please check console for details.');
-                        },
-                        complete: function() {
-                            $btn.prop('disabled', false);
-                        }
-                    });
+            formData.forEach(field => {
+                if (field.value) {
+                    params.set(field.name, field.value);
+                } else {
+                    params.delete(field.name);
                 }
             });
 
-            // Filter Table
-            $('#filterForm').submit(function(event) {
-                event.preventDefault();
-                // const name = $('#item_name').val();
-                // const target = $('#item_target').val();
-                const $btn = $("#saveFilterBtn");
+            window.location.href = `${url.pathname}?${params.toString()}`;
+            // console.log(`${url.pathname}?${params.toString()}`);
 
-                // Get type if it's a local body  
-                // const type = currentLevel === 'localbody_admin' ? $('#item_type').val() : null;
+            showLoading('filterForm', 'filterLoadingSpinner');
+            $btn.prop('disabled', true);
 
-                // if (!name || !target || (currentLevel === 'localbody_admin' && !type)) {
-                //     alert('Please fill all fields');
-                //     return;
-                // }
-                const formData = $(this).serializeArray();
-                const url = new URL(window.location.href);
-                const params = new URLSearchParams(url.search);
 
-                formData.forEach(field => {
-                    if (field.value) {
-                        params.set(field.name, field.value);
-                    } else {
-                        params.delete(field.name);
+        });
+
+        function loadMandalams(districtId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'ajax/get_mandalams.php',
+                    method: 'GET',
+                    data: {
+                        district_id: districtId
+                    },
+                    success: function(response) {
+                        resolve(response);
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
                     }
                 });
-
-                window.location.href = `${url.pathname}?${params.toString()}`;
-                // console.log(`${url.pathname}?${params.toString()}`);
-
-                showLoading('filterForm', 'filterLoadingSpinner');
-                $btn.prop('disabled', true);
-
-
             });
+        }
 
-            function loadMandalams(districtId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: 'ajax/get_mandalams.php',
-                        method: 'GET',
-                        data: {
-                            district_id: districtId
-                        },
-                        success: function(response) {
-                            resolve(response);
-                        },
-                        error: function(xhr, status, error) {
-                            reject(error);
-                        }
-                    });
+        function loadLocalbodies(mandalamId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'ajax/get_localbodies.php',
+                    method: 'GET',
+                    data: {
+                        mandalam_id: mandalamId
+                    },
+                    success: function(response) {
+                        resolve(response);
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
+                    }
                 });
-            }
-
-            function loadLocalbodies(mandalamId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: 'ajax/get_localbodies.php',
-                        method: 'GET',
-                        data: {
-                            mandalam_id: mandalamId
-                        },
-                        success: function(response) {
-                            resolve(response);
-                        },
-                        error: function(xhr, status, error) {
-                            reject(error);
-                        }
-                    });
-                });
-            }
-        });
-    </script>
-</body>
+            });
+        }
+    });
+</script>
 
 </html>

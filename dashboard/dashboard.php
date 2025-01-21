@@ -310,8 +310,8 @@ try {
     </nav>
 
     <div class="dashboard">
-        <div class="header mb-5">
-            <div class="d-flex flex-column flex-wrap">
+        <div class="header mb-4">
+            <div class="d-flex justify-content-center flex-column flex-wrap">
                 <h5 class="d-flex flex-wrap gap-1 m-0">Welcome, <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong></h5>
                 <p class="d-flex flex-wrap gap-1 breadcrumb m-0">
                     <?php
