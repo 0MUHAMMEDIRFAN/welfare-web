@@ -183,6 +183,7 @@ try {
 
 <head>
     <title>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -216,7 +217,7 @@ try {
             <?php if (count($currentManages) > 1): ?>
                 <div class="mb-3 d-flex flex-wrap gap-1">
                     <?php foreach ($currentManages as $role): ?>
-                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-secondary" ?>">
+                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-light" ?>">
                             <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
                         </a>
                     <?php endforeach; ?>
@@ -226,8 +227,8 @@ try {
                 <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
             <?php endif; ?>
             <p class="">
-                <a href="../dashboard/dashboard.php" class="btn btn-secondary">← Back</a>
-                <!-- <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-secondary">← Back</a> -->
+                <a href="../dashboard/dashboard.php" class="btn btn-light">← Back</a>
+                <!-- <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-light">← Back</a> -->
             </p>
         </div>
 
@@ -327,7 +328,7 @@ try {
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                 ← Prev
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -337,7 +338,7 @@ try {
                                                     </option>
                                                 <?php endfor; ?>
                                             </select>
-                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                 Next →
                                             </a>
                                         </div>
@@ -417,7 +418,7 @@ try {
                             <input type="number" class="form-control" id="item_target" required>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary" id="saveItemBtn">Save</button>
                         </div>
                     </form>
@@ -482,7 +483,7 @@ try {
                             <input type="number" class="form-control" id="edit_item_target" required>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary" id="updateItemBtn">Update</button>
                         </div>
                     </form>
@@ -557,7 +558,7 @@ try {
                             <input type="number" class="form-control" id="item_target" required>
                         </div> -->
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary" id="saveFilterBtn">Submit</button>
                         </div>
                     </form>

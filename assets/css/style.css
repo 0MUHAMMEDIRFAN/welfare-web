@@ -85,10 +85,6 @@ button {
     cursor: pointer;
 }
 
-button:hover {
-    background: #45a049;
-}
-
 a {
     color: #4CAF50;
     text-decoration: none;
@@ -174,11 +170,21 @@ a:hover {
     font-size: 14px !important;
 }
 
+.btn.btn-light {
+    background-color: #bfdcfa !important;
+}
+
 .header {
     display: flex;
     justify-content: space-between;
     /* align-items: center; */
     margin-bottom: 16px;
+}
+
+nav.navbar {
+    position: sticky !important;
+    top: 0;
+    z-index: 10;
 }
 
 .breadcrumb {

@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <head>
     <title>Login - Party Fund Collection</title>
-
+    <link rel="icon" href="./assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="index.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <form method="POST">
             <div>
                 <label>Phone</label>
-                <input type="text" name="phone" required>
+                <input type="text" name="phone" minlength="10" maxlength="10" required>
             </div>
             <div class="mb-2 input-container">
                 <label>MPIN</label>
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <p class="text-end mb-2">
                 <a href="./admin/newMpin.php" class="fw-bolder small text-primary">Forgot MPIN?</a>
             </p>
-            <button type="submit">Login</button>
+            <button class="submit-button" type="submit">Login</button>
         </form>
     </div>
     <!-- Verify Payment Button -->

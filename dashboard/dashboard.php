@@ -85,11 +85,12 @@ try {
     // Get location details  
     if ($parentTable) {
         if ($currentHeading == "District") {
-            $stmt = $pdo->prepare("SELECT name as district_name FROM {$parentTable} WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT name as district_name,target_amount FROM {$parentTable} WHERE id = ?");
         } else if ($currentHeading == "Mandalam") {
             $stmt = $pdo->prepare("SELECT
                 m.name as mandalam_name, 
-                d.name as district_name   
+                d.name as district_name,
+                m.target_amount   
             FROM mandalams m   
             JOIN districts d ON m.district_id = d.id   
             WHERE m.id = ? ");
@@ -97,7 +98,8 @@ try {
             $stmt = $pdo->prepare("SELECT 
                 l.name as localbody_name,  
                 m.name as mandalam_name,  
-                d.name as district_name  
+                d.name as district_name,
+                l.target_amount
             FROM localbodies l  
             JOIN mandalams m ON l.mandalam_id = m.id  
             JOIN districts d ON m.district_id = d.id  
@@ -108,7 +110,7 @@ try {
                 l.name as localbody_name,  
                 m.name as mandalam_name,  
                 d.name as district_name,
-                u.target_amount as unit_target_amount
+                u.target_amount
             FROM units u  
             JOIN localbodies l ON u.localbody_id = l.id  
             JOIN mandalams m ON l.mandalam_id = m.id  
@@ -181,23 +183,18 @@ try {
     $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
 
     // Calculate totals
-    $totalTarget = $currentHeading == "Unit" ? $location['unit_target_amount'] : 0;
     $totalCollectedMobile = 0;
     $totalCollectedToday = 0;
     $totalDonors = 0;
 
     // Query to get total target amount
-    if ($currentHeading != "Unit") {
+    if ($currentHeading == "State") {
         $totalTargetQuery = "SELECT SUM(target_amount) as total_target FROM {$childTable}";
-        if ($parentField) {
-            $totalTargetQuery .= " WHERE {$parentField} = :parent_id";
-        }
         $stmt = $pdo->prepare($totalTargetQuery);
-        if ($parentField) {
-            $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
-        }
         $stmt->execute();
         $totalTarget = $stmt->fetchColumn();
+    } else {
+        $totalTarget = $location['target_amount'];
     }
 
     // Query to get total collected amount from mobile and total donations via mobile
@@ -246,30 +243,8 @@ try {
     }
     $stmt->execute();
     $totalCollectedPaper = $stmt->fetchColumn();
-    
-    $totalCollected = $totalCollectedMobile + $totalCollectedPaper;
 
-    // Query to get total collected amount today
-    // $totalCollectedTodayQuery = "SELECT
-    //     COALESCE(SUM(dn.amount), 0) as total_collected_today
-    //         FROM donations dn
-    //         JOIN units u ON dn.unit_id = u.id  
-    //         -- {$dynamicQuery}
-    //         WHERE dn.deleted_at IS NULL AND DATE(dn.created_at) = CURDATE()";
-    // if ($parentField) {
-    //     if ($parentField == "unit_id") {
-    //         $totalCollectedTodayQuery .= " AND u.id = :parent_id";
-    //     } else {
-    //         $totalCollectedTodayQuery .= " AND u.{$parentField} = :parent_id";
-    //     }
-    //     // $totalCollectedTodayQuery .= " AND {$currentAlias}.{$parentField} = :parent_id";
-    // }
-    // $stmt = $pdo->prepare($totalCollectedTodayQuery);
-    // if ($parentField) {
-    //     $stmt->bindValue(':parent_id', $parent_id, PDO::PARAM_INT);
-    // }
-    // $stmt->execute();
-    // $totalCollectedToday = $stmt->fetchColumn();
+    $totalCollected = $totalCollectedMobile + $totalCollectedPaper;
 } catch (PDOException $e) {
     die("Query failed: " . $e->getMessage());
 }
@@ -280,6 +255,7 @@ try {
 
 <head>
     <title><?php echo $currentHeading; ?> Admin Dashboard</title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="./dashboard.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -333,7 +309,7 @@ try {
                     ?>
                 </p>
             </div>
-            <p class="d-flex gap-2 flex-wrap justify-content-end m-0">
+            <p class="d-flex gap-2 flex-wrap justify-content-end align-items-start m-0">
                 <?php if ($currentHeading == "Unit") {
                     echo '<a href="../admin/manage_collectors.php" class="btn btn-manage">Manage Collectors</a>';
                 } else {
@@ -350,14 +326,14 @@ try {
                 <h3>Target</h3>
                 <!-- <i class="fa-solid fa-minimize card-icon bg-"></i> -->
                 <!-- </div> -->
-                <p>₹<?php echo ($currentHeading == "Unit") ? $location["unit_target_amount"] : number_format($totalTarget, 2); ?></p>
+                <p>₹<?php echo number_format($totalTarget, 2); ?></p>
             </div>
             <div class="card custom-card">
                 <!-- <div class="d-flex justify-content-between align-items-center"> -->
                 <h3>Total Collection</h3>
                 <!-- <i class="fa-solid fa-arrow-trend-up card-icon"></i> -->
                 <!-- </div> -->
-                <p>₹<?php echo number_format($totalCollected, 2); ?></p>
+                <p class="<?php echo $totalTarget <= $totalCollected ? 'text-success' : 'text-danger'; ?>">₹<?php echo number_format($totalCollected, 2); ?></p>
             </div>
             <div class="card custom-card">
                 <!-- <div class="d-flex justify-content-between align-items-center"> -->
@@ -424,8 +400,13 @@ try {
             </div>
         </div>
 
-        <div class="content table-responsive">
+        <div class="content d-flex gap-1 justify-content-between">
             <h2><?php echo $childHeading; ?> Summary</h2>
+            <p class="">
+                <a href="../reports/view_reports.php" class="btn btn-light">All Reports →</a>
+            </p>
+        </div>
+        <div class="content table-responsive">
             <table class="">
                 <thead>
                     <tr>
@@ -506,7 +487,7 @@ try {
                                 <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                     <p class="align-middle h-100 m-0">Total : <?php echo count($summary); ?> / <?php echo $totalItems; ?></p>
                                     <div class="d-flex justify-content-center align-items-center gap-2">
-                                        <a href="?page=<?php echo max(1, $page - 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                        <a href="?page=<?php echo max(1, $page - 1); ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                             ← Prev
                                         </a>
                                         <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -516,7 +497,7 @@ try {
                                                 </option>
                                             <?php endfor; ?>
                                         </select>
-                                        <a href="?page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                        <a href="?page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                             Next →
                                         </a>
                                     </div>
@@ -544,7 +525,7 @@ try {
                             <input type="number" class="form-control" id="target_amount" required>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary" id="saveTargetBtn">Save changes</button>
                         </div>
                     </form>

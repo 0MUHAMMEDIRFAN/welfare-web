@@ -43,20 +43,57 @@ if ($collector_id) {
     // $collector_filter = " AND d.collector_id = $collector_id ";
 }
 
-if (!$level || !$id) {
-    die("Invalid parameters");
-}
+$adminHierarchy = [
+    'state_admin' => [
+        'manages' => ['district_admin', 'mandalam_admin', "localbody_admin", "unit_admin"],
+        'table' => ['districts', "mandalams", "localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => [null, 'district_id', "mandalam_id", "localbody_id"],
+        'parent_field_table' => [null, 'districts', "mandalams", "localbodies"]
+    ],
+    'district_admin' => [
+        'manages' => ['mandalam_admin', "localbody_admin", "unit_admin"],
+        'table' => ["mandalams", "localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => ['district_id', "mandalam_id", "localbody_id"],
+        'parent_field_table' => ['districts', "mandalams", "localbodies"]
+    ],
+    'mandalam_admin' => [
+        'manages' => ["localbody_admin", "unit_admin"],
+        'table' => ["localbodies", "units"],
+        'name_field' => 'name',
+        'parent_field' => ["mandalam_id", "localbody_id"],
+        'parent_field_table' => ["mandalams", "localbodies"]
+    ],
+    'localbody_admin' => [
+        'manages' => ["unit_admin"],
+        'table' => ['units'],
+        'name_field' => 'name',
+        'parent_field' => ['localbody_id'],
+        'parent_field_table' => ["localbodies"]
+    ],
+    'unit_admin' => [
+        'manages' => [""],
+        'table' => [''],
+        'name_field' => 'name',
+        'parent_field' => ['unit_id'],
+        'parent_field_table' => ["units"]
+    ]
+];
+
 
 // Define admin hierarchy and their manageable levels  
 $levelHierarchy = [
     'district' => [
+        'manages' => ['district', 'mandalam', "localbody", "unit"],
         'child' => ['mandalam', "localbody", "unit", "collector"],
         'child_tables' => ["mandalams", "localbodies", "units", "units"],
         'name_field' => 'name',
-        'parent' => null,
+        'parent' => 'state',
         'parent_field' => ['district_id', "mandalam_id", "localbody_id", "localbody_id"],
     ],
     'mandalam' => [
+        'manages' => ['mandalam', "localbody", "unit"],
         'child' => ["localbody", "unit", "collector"],
         'child_tables' => ["localbodies", "units", "units"],
         'name_field' => 'name',
@@ -64,6 +101,7 @@ $levelHierarchy = [
         'parent_field' => ["mandalam_id", "localbody_id", "localbody_id"],
     ],
     'localbody' => [
+        'manages' => ["localbody", "unit"],
         'child' => ["unit", "collector"],
         'child_tables' => ['units', 'units'],
         'name_field' => 'name',
@@ -71,6 +109,7 @@ $levelHierarchy = [
         'parent_field' => ["localbody_id", "localbody_id"],
     ],
     'unit' => [
+        'manages' => ["unit"],
         'child' => ["collector"],
         'child_tables' => ['units'],
         'name_field' => 'name',
@@ -78,6 +117,7 @@ $levelHierarchy = [
         'parent_field' => ["localbody_id"],
     ],
     'collector' => [
+        'manages' => [],
         'child' => [],
         'child_tables' => ['users'],
         'name_field' => 'name',
@@ -86,50 +126,76 @@ $levelHierarchy = [
     ]
 ];
 
+$currentUserRole = $_SESSION['role'];
+$currentUserLevel = $_SESSION['level'];
+$currentUserLevelId = $_SESSION['user_level_id'];
+$currentLevel = $adminHierarchy[$currentUserRole];
+$currentManages = $currentLevel['manages'];
+
+if (!$level) {
+    $level = str_replace('_admin', '', $currentManages[0]);
+    header("Location: view_reports.php?level=$level");
+    exit();
+} else {
+    if (!in_array($level . "_admin", $currentManages)) {
+        die("Invalid Params");
+    }
+    if (!$id) {
+        $userlevel = $levelHierarchy[$level]['parent'];
+    } else {
+        $userlevel = $level;
+    }
+}
+
+$mainTables = $currentLevel['table'];
+$managingRole = $level . "_admin";
+$mainParentFields = $currentLevel['parent_field'];
+
 $currentLevelPerm = $levelHierarchy[$level];
 $currentLevelChild = $currentLevelPerm['child'][0];
 $currentLevelChildId = $currentLevelPerm['child'][0] . '_id';
 
-$managingRole = '';
 
-$currentManages = $currentLevelPerm['child'];
-$mainTables = $currentLevelPerm['child_tables'];
-$mainParentFields = $currentLevelPerm['parent_field'];
+
+
+
 
 try {
     // Get the current level details  
-    $levelQuery = match ($level) {
-        'district' => "SELECT di.*,   
-            (SELECT COUNT(*) FROM mandalams WHERE district_id = di.id) as total_mandalams,  
+    if ($id) {
+        $levelQuery = match ($level) {
+            'district' => "SELECT di.*,   
+            (SELECT COUNT(*) FROM mandalams 
+             WHERE district_id = di.id) as total_mandalams,  
             (SELECT COUNT(DISTINCT l.id) FROM localbodies l   
              JOIN mandalams m ON l.mandalam_id = m.id   
-             WHERE m.district_id = di.id) as total_localbodies,  
+              WHERE m.district_id = di.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
              JOIN mandalams m ON l.mandalam_id = m.id   
-             WHERE m.district_id = di.id) as total_units,
+              WHERE m.district_id = di.id) as total_units,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = di.id) as total_collection_paper,
+              WHERE m.district_id = di.id) as total_collection_paper,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = di.id AND d.payment_type = 'CASH') as total_collection_offline,
+              WHERE m.district_id = di.id AND d.payment_type = 'CASH') as total_collection_offline,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = di.id AND d.payment_type != 'CASH') as total_collection_online,
+              WHERE m.district_id = di.id AND d.payment_type != 'CASH') as total_collection_online,
             (SELECT COUNT(DISTINCT d.id) FROM donations d
              JOIN units u ON d.unit_id = u.id
              JOIN localbodies l ON u.localbody_id = l.id
              JOIN mandalams m ON l.mandalam_id = m.id
-             WHERE m.district_id = di.id) as total_donors
+              WHERE m.district_id = di.id) as total_donors
             FROM districts di WHERE di.id = ?",
-        'mandalam' => "SELECT m.*, d.name as district_name,  
+            'mandalam' => "SELECT m.*, d.name as district_name,  
             (SELECT COUNT(*) FROM localbodies WHERE mandalam_id = m.id) as total_localbodies,  
             (SELECT COUNT(DISTINCT u.id) FROM units u   
              JOIN localbodies l ON u.localbody_id = l.id   
@@ -151,9 +217,8 @@ try {
              JOIN localbodies l ON u.localbody_id = l.id
              WHERE l.mandalam_id = m.id) as total_donors
             FROM mandalams m   
-            JOIN districts d ON m.district_id = d.id   
-            WHERE m.id = ?",
-        'localbody' => "SELECT l.*, m.name as mandalam_name, d.name as district_name,  
+            JOIN districts d ON m.district_id = d.id WHERE m.id = ?",
+            'localbody' => "SELECT l.*, m.name as mandalam_name, d.name as district_name,  
             (SELECT COUNT(*) FROM units WHERE localbody_id = l.id) as total_units,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              JOIN units u ON cr.unit_id = u.id
@@ -169,9 +234,8 @@ try {
              WHERE u.localbody_id = l.id) as total_donors
             FROM localbodies l   
             JOIN mandalams m ON l.mandalam_id = m.id  
-            JOIN districts d ON m.district_id = d.id   
-            WHERE l.id = ?",
-        'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name,
+            JOIN districts d ON m.district_id = d.id WHERE l.id = ?",
+            'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name,
             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
              WHERE cr.unit_id = u.id) as total_collection_paper,
             (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
@@ -183,15 +247,79 @@ try {
             FROM units u   
             JOIN localbodies l ON u.localbody_id = l.id  
             JOIN mandalams m ON l.mandalam_id = m.id  
-            JOIN districts d ON m.district_id = d.id   
-            WHERE u.id = ?",
-        default => throw new Exception("Invalid level")
-    };
-
+            JOIN districts d ON m.district_id = d.id WHERE u.id = ?",
+            default => throw new Exception("Invalid level")
+        };
+    } else {
+        $levelQuery = match ($level) {
+            'district' => "SELECT COUNT(*) as total_mandalams,
+            (SELECT COUNT(DISTINCT l.id) FROM localbodies l   
+             JOIN mandalams m ON l.mandalam_id = m.id) as total_localbodies,  
+            (SELECT COUNT(DISTINCT u.id) FROM units u   
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id) as total_units,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id
+             JOIN mandalams m ON l.mandalam_id = m.id) as total_donors,
+            (SELECT target_amount FROM districts WHERE id = $currentUserLevelId) as target_amount
+            FROM mandalams",
+            'mandalam' => "SELECT COUNT(*) as total_localbodies,  
+            (SELECT COUNT(DISTINCT u.id) FROM units u   
+             JOIN localbodies l ON u.localbody_id = l.id) as total_units,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id
+             JOIN localbodies l ON u.localbody_id = l.id) as total_donors,
+            (SELECT target_amount FROM mandalams WHERE id = $currentUserLevelId) as target_amount
+            FROM localbodies",
+            'localbody' => "SELECT COUNT(*) as total_units,
+            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+             JOIN units u ON cr.unit_id = u.id) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id AND d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+             JOIN units u ON d.unit_id = u.id AND d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d
+             JOIN units u ON d.unit_id = u.id) as total_donors,
+            (SELECT target_amount FROM localbodies WHERE id = $currentUserLevelId) as target_amount
+            FROM units",
+            'unit' => "SELECT COALESCE(SUM(cr.amount), 0) as total_collection_paper,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d WHERE d.payment_type = 'CASH') as total_collection_offline,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM donations d WHERE d.payment_type != 'CASH') as total_collection_online,
+            (SELECT COUNT(DISTINCT d.id) FROM donations d) as total_donors,
+            (SELECT target_amount FROM units WHERE id = $currentUserLevelId) as target_amount
+            FROM collection_reports cr",
+            default => throw new Exception("Invalid level")
+        };
+    }
     $stmt = $pdo->prepare($levelQuery);
-    $stmt->execute([$id]);
+    if ($id) {
+        $stmt->bindParam(1, $id, PDO::PARAM_INT);
+    }
+    $stmt->execute();
     $details = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    // error_log(json_encode($details), 3, './log.log');
     $totalCollectedMobile = 0;
     $totalDonors = 0;
 
@@ -213,9 +341,25 @@ try {
 
     // Get collection details  
 
-    $collectionQuery = match ($level) {
+    $collectionQuery = match ($userlevel) {
+        'state' => "SELECT SQL_CALC_FOUND_ROWS   
+            di.name as name, di.id,  
+            COALESCE(SUM(d.amount), 0) as total_collected_app,  
+            COUNT(DISTINCT d.id) as total_donations,
+            COALESCE(SUM(cr.amount), 0) as total_collected_paper,
+            di.target_amount
+            FROM districts di   
+            LEFT JOIN mandalams m ON m.district_id = di.id  
+            LEFT JOIN localbodies l ON l.mandalam_id = m.id  
+            LEFT JOIN units u ON u.localbody_id = l.id  
+            LEFT JOIN donations d ON d.unit_id = u.id  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
+            -- " . ($id ? " WHERE m.district_id = ?" : "") . "  
+            GROUP BY di.id, di.name, di.target_amount  
+            ORDER BY di.name  
+            LIMIT $limit OFFSET $offset",
         'district' => "SELECT SQL_CALC_FOUND_ROWS   
-            m.name as name, m.id as mandalam_id,  
+            m.name as name, m.id,  
             COALESCE(SUM(d.amount), 0) as total_collected_app,  
             COUNT(DISTINCT d.id) as total_donations,
             COALESCE(SUM(cr.amount), 0) as total_collected_paper,
@@ -224,13 +368,13 @@ try {
             LEFT JOIN localbodies l ON l.mandalam_id = m.id  
             LEFT JOIN units u ON u.localbody_id = l.id  
             LEFT JOIN donations d ON d.unit_id = u.id  
-            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
-            WHERE m.district_id = ?  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id"
+            . ($id ? " WHERE m.district_id = ?" : "") . "  
             GROUP BY m.id, m.name, m.target_amount  
             ORDER BY m.name  
             LIMIT $limit OFFSET $offset",
         'mandalam' => "SELECT SQL_CALC_FOUND_ROWS   
-            l.name as name, l.id as localbody_id,  
+            l.name as name, l.id,  
             COALESCE(SUM(d.amount), 0) as total_collected_app,  
             COUNT(DISTINCT d.id) as total_donations,
             COALESCE(SUM(cr.amount), 0) as total_collected_paper,
@@ -238,21 +382,21 @@ try {
             FROM localbodies l  
             LEFT JOIN units u ON u.localbody_id = l.id  
             LEFT JOIN donations d ON d.unit_id = u.id  
-            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
-            WHERE l.mandalam_id = ?  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id"
+            . ($id ? " WHERE l.mandalam_id = ?" : "") . "  
             GROUP BY l.id, l.name, l.target_amount  
             ORDER BY l.name  
             LIMIT $limit OFFSET $offset",
         'localbody' => "SELECT SQL_CALC_FOUND_ROWS   
-            u.name as name, u.id as unit_id,  
+            u.name as name, u.id,  
             COALESCE(SUM(d.amount), 0) as total_collected_app,  
             COUNT(DISTINCT d.id) as total_donations,
             COALESCE(SUM(cr.amount), 0) as total_collected_paper,
             u.target_amount
             FROM units u  
             LEFT JOIN donations d ON d.unit_id = u.id  
-            LEFT JOIN collection_reports cr ON cr.unit_id = u.id
-            WHERE u.localbody_id = ?  
+            LEFT JOIN collection_reports cr ON cr.unit_id = u.id"
+            . ($id ? " WHERE u.localbody_id = ?" : "") . "  
             GROUP BY u.id, u.name, u.target_amount  
             ORDER BY u.name  
             LIMIT $limit OFFSET $offset",
@@ -261,8 +405,8 @@ try {
             COALESCE(SUM(cr.amount), 0) as total_collected_paper
             FROM donations d  
             LEFT JOIN users u ON d.collector_id = u.id  
-            LEFT JOIN collection_reports cr ON cr.unit_id = d.unit_id
-            WHERE d.unit_id = ?  $collector_filter
+            LEFT JOIN collection_reports cr ON cr.unit_id = d.unit_id"
+            . ($id ? " WHERE d.unit_id = ?" : "") . " $collector_filter
             GROUP BY d.id
             ORDER BY d.created_at DESC  
             LIMIT $limit OFFSET $offset",
@@ -270,7 +414,10 @@ try {
     };
 
     $stmt = $pdo->prepare($collectionQuery);
-    $stmt->execute([$id]);
+    if ($id) {
+        $stmt->bindParam(1, $id, PDO::PARAM_INT);
+    }
+    $stmt->execute();
     $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $totalItems = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
@@ -284,6 +431,7 @@ try {
 
 <head>
     <title>Reports View</title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../dashboard/dashboard.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -311,22 +459,57 @@ try {
             </div>
         </div>
     </nav>
+
+
+    <?php if (!$id): ?>
+        <div class="container mt-4">
+            <div class="header d-flex gap-1">
+                <?php if (count($currentManages) > 1): ?>
+                    <div class="mb-3 d-flex flex-wrap gap-1">
+                        <?php foreach ($currentManages as $role): ?>
+                            <a href="?level=<?php echo str_replace('_admin', '', $role); ?>" class="btn <?php echo $managingRole ===  $role ? "btn-primary" : "btn-light" ?>">
+                                <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <h2><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
+                <?php endif; ?>
+                <p class="">
+                    <a href="../dashboard/dashboard.php" class="btn btn-light">← Back</a>
+                </p>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="dashboard">
         <div class="header">
-            <h2><?php echo htmlspecialchars($details['name']); ?> <?php echo ucfirst($level); ?></h2>
-            <p>
-                <?php if ($parent_id): ?>
-                    <a href="<?php echo $currentLevelPerm['parent'] ? './view_reports.php?level=' . $currentLevelPerm['parent'] . '&id=' . $parent_id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-secondary">← Back</a>
+            <h2>
+                <?php if ($id): ?>
+                    <?php echo htmlspecialchars($details['name']); ?><?php echo ucfirst($level); ?>
                 <?php else: ?>
-                    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+                    All <?php echo ucfirst($level); ?>s
                 <?php endif; ?>
-
-            </p>
+            </h2>
+            <div class="mb-3 d-flex flex-wrap justify-content-end gap-1">
+                <?php if ($filteredText): ?>
+                    <a href="?type=<?php echo $level; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
+                <?php endif; ?>
+                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fa-solid fa-list"></i> Filter Table</button>
+                <?php if ($id): ?>
+                    <p class="mb-0">
+                        <?php if ($parent_id): ?>
+                            <a href="<?php echo $currentLevelPerm['parent'] ? './view_reports.php?level=' . $currentLevelPerm['parent'] . '&id=' . $parent_id : './' . $_SESSION['level'] . '.php'; ?>" class="btn btn-light">← Back</a>
+                        <?php else: ?>
+                            <a href="javascript:history.back()" class="btn btn-light">← Back</a>
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="details-section">
-
-            <?php if ($level != 'district'): ?>
+            <?php if ($level != 'district' && $id): ?>
                 <p class="breadcrumb">
                     <?php echo htmlspecialchars($details['district_name']); ?>
                     <?php if (isset($details['mandalam_name'])): ?>
@@ -402,13 +585,12 @@ try {
 
             <div class="d-flex justify-content-between">
                 <h3>Collection Reports</h3>
-                
             </div>
             <div class="content table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <?php if ($level == 'unit'): ?>
+                            <?php if ($level == 'unit' && $id): ?>
                                 <th>Receipt No</th>
                                 <th>Date</th>
                                 <th>Donor Name</th>
@@ -435,7 +617,7 @@ try {
                         <?php else: ?>
                             <?php foreach ($collections as $row): ?>
                                 <tr class="<?php echo $level == "unit" ? "" :  "table-clickable-row" ?>" onclick='handleTableRowClick(<?php echo json_encode($row); ?>)'>
-                                    <?php if ($level == 'unit'): ?>
+                                    <?php if ($level == 'unit' && $id): ?>
                                         <td><?php echo htmlspecialchars($row['receipt_number']); ?></td>
                                         <td><?php echo date('d-m-Y', strtotime($row['created_at'])); ?></td>
                                         <td><?php echo htmlspecialchars($row['name']); ?></td>
@@ -443,16 +625,7 @@ try {
                                         <td><?php echo htmlspecialchars($row['payment_type']); ?></td>
                                         <td><?php echo htmlspecialchars($row['collector_name']); ?></td>
                                     <?php else: ?>
-                                        <td>
-                                            <?php
-                                            echo htmlspecialchars($row[match ($level) {
-                                                'district' => 'mandalam_id',
-                                                'mandalam' => 'localbody_id',
-                                                'localbody' => 'unit_id',
-                                                default => 'id'
-                                            }]);
-                                            ?>
-                                        </td>
+                                        <td><?php echo htmlspecialchars($row['id']); ?></td>
                                         <td><?php echo htmlspecialchars($row['name']); ?></td>
                                         <td>₹<?php echo number_format($row['target_amount'], 2); ?></td>
                                         <td>₹<?php echo number_format($row['total_collected_app'], 2); ?></td>
@@ -478,7 +651,7 @@ try {
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($collections); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                 ← Prev
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -488,7 +661,7 @@ try {
                                                     </option>
                                                 <?php endfor; ?>
                                             </select>
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                 Next →
                                             </a>
                                         </div>
@@ -517,14 +690,17 @@ try {
                         </div>
                     </div>
                     <form id="filterForm">
-                        <div class="mb-3">
-                            <label for="start_date" class="form-label">Start Date</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control">
+                        <div class="d-flex gap-2 flex-sm-nowrap flex-wrap">
+                            <div class="mb-3 w-100">
+                                <label for="from_date" class="form-label">From</label>
+                                <input type="date" name="from_date" id="from_date" class="form-control">
+                            </div>
+                            <div class="mb-3 w-100">
+                                <label for="to_date" class="form-label">To</label>
+                                <input type="date" name="to_date" id="to_date" class="form-control">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="end_date" class="form-label">End Date</label>
-                            <input type="date" name="end_date" id="end_date" class="form-control">
-                        </div>
+
                         <?php
                         $i = 0;
                         while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
@@ -556,7 +732,7 @@ try {
                         }
                         ?>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary" id="saveFilterBtn">Submit</button>
                         </div>
                     </form>
@@ -571,16 +747,16 @@ try {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const level = "<?php echo $level; ?>";
-    const childLevel = "<?php echo $currentLevelChild; ?>";
+    const redirectLevel = "<?php echo $id; ?>" ? "<?php echo $currentLevelChild; ?>" : level
     const parentId = "<?php echo $id; ?>";
 
     function handleTableRowClick(row) {
-        const childLevelId = row["<?php echo $currentLevelChildId; ?>"];
+        const childLevelId = row["id"];
         // console.log(row)
         if (level === 'unit') {
             // Add any specific logic for 'unit' level if needed
         } else {
-            location.href = `view_reports.php?level=${childLevel}&id=${childLevelId}`;
+            location.href = `view_reports.php?level=${redirectLevel}&id=${childLevelId}`;
         }
     }
 </script>

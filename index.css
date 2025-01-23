@@ -65,7 +65,8 @@ button {
     width: 100%;
 }
 
-button:hover {
+.submit-button:hover {
+    border-radius: 8px !important;
     background: #45a049;
 }
 

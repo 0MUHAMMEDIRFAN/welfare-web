@@ -214,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <title><?php echo $isEditing ? 'Edit' : 'Add'; ?> <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?></title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -331,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="d-flex justify-content-between">
                                 <a href="manage_admins.php?type=<?php echo $managingRole; ?>"
-                                    class="btn btn-secondary">
+                                    class="btn btn-light">
                                     <i class="fas fa-arrow-left"></i> Back
                                 </a>
                                 <button type="submit" class="btn btn-primary">

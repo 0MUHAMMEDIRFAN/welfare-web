@@ -12,8 +12,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SET NEW MPIN</title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../index.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -33,12 +33,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="text" id="phone" name="phone" required>
             </div>
             <div class="form-group submit-button">
-                <button id="submit-button" type="submit" name="submit">Submit</button>
+                <button class="submit-button" id="submit-button" type="submit" name="submit">Submit</button>
             </div>
         </form>
         <div style="text-align: center; margin-top: 20px;">
-            <a id="backLogin" href="../index.php" class="btn btn-secondary">← Login Page</a>
-
+            <a id="backLogin" href="../index.php" class="btn btn-light">← Login Page</a>
         </div>
     </div>
 </body>

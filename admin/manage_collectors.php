@@ -195,6 +195,7 @@ try {
 
 <head>
     <title>Manage Collectors</title>
+    <link rel="icon" href="../assets/images/party-logo.jpg" type="image/png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="./admin.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -233,7 +234,7 @@ try {
                 </p>
             </div>
             <p>
-                <a href="../dashboard/dashboard.php" class="btn btn-secondary">← Back</a>
+                <a href="../dashboard/dashboard.php" class="btn btn-light">← Back</a>
             </p>
         </div>
 
@@ -355,7 +356,7 @@ try {
                                                 </div>   -->
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                                             </div>
                                         </form>
@@ -371,7 +372,7 @@ try {
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($collectors); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                 ← Prev
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
@@ -381,7 +382,7 @@ try {
                                                     </option>
                                                 <?php endfor; ?>
                                             </select>
-                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-secondary btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                 Next →
                                             </a>
                                         </div>
