@@ -5,6 +5,11 @@ require_once '../includes/functions.php';
 
 requireLogin();
 
+$level = $_GET['level'] ?? '';
+$id = $_GET['id'] ?? '';
+$parent_id = $_GET['parent_id'] ?? '';
+$collector_id = $_GET['colid'] ?? '';
+$collector_filter = "";
 
 $limit = 10; // Number of records per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -22,7 +27,7 @@ if ($sortField) {
         $sortFieldParams .= "&sort_order=$sortOrder";
     }
 } else {
-    $sortField = 'id';
+    $sortField = $id && $level === "unit" ? "id" : 'total_collected';
     $sortOrder = 'DESC';
 }
 
@@ -45,32 +50,27 @@ if ($toDate) {
 }
 
 
-// Filter options
-$filterOptions = [];
-if (isset($_GET['localbody']) && in_array('localbody_admin', $currentManages)) {
-    $filterOptions['localbody_id'] = $_GET['localbody'];
-} else if (isset($_GET['mandalam']) && in_array('mandalam_admin', $currentManages)) {
-    $filterOptions['mandalam_id'] = $_GET['mandalam'];
-} else if (isset($_GET['district']) && in_array('district_admin', $currentManages)) {
-    $filterOptions['district_id'] = $_GET['district'];
-}
+// // Filter options
+// $filterOptions = [];
+// if (isset($_GET['localbody']) && in_array('localbody_admin', $currentManages)) {
+//     $filterOptions['localbody_id'] = $_GET['localbody'];
+// } else if (isset($_GET['mandalam']) && in_array('mandalam_admin', $currentManages)) {
+//     $filterOptions['mandalam_id'] = $_GET['mandalam'];
+// } else if (isset($_GET['district']) && in_array('district_admin', $currentManages)) {
+//     $filterOptions['district_id'] = $_GET['district'];
+// }
 
-// Build filter query
-$filterQuery = '';
-$filterParams = '';
-foreach ($filterOptions as $field => $value) {
-    $fieldText =  str_replace('_id', '', $field);
-    $filterQuery .= " AND t.$field = :$field";
-    $filterParams .= "&$fieldText=$value";
-    $filteredText = "Filtered By $fieldText";
-}
+// // Build filter query
+// $filterQuery = '';
+// $filterParams = '';
+// foreach ($filterOptions as $field => $value) {
+//     $fieldText =  str_replace('_id', '', $field);
+//     $filterQuery .= " AND t.$field = :$field";
+//     $filterParams .= "&$fieldText=$value";
+//     $filteredText = "Filtered By $fieldText";
+// }
 
 
-$level = $_GET['level'] ?? '';
-$id = $_GET['id'] ?? '';
-$parent_id = $_GET['parent_id'] ?? '';
-$collector_id = $_GET['colid'] ?? '';
-$collector_filter = "";
 if ($collector_id) {
     // $collector_filter = " AND d.collector_id = $collector_id ";
 }
@@ -587,7 +587,94 @@ try {
                 </p>
             <?php endif; ?>
 
-            <div class="summary-cards">
+            <div class="row">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Target Amount</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalTarget, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Total Collected</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollected, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Percentage
+                                    </div>
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col-auto">
+                                            <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800"><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="progress progress-sm mr-2">
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                    style="width: <?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%" aria-valuenow="<?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>" aria-valuemin="0"
+                                                    aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Orgs Data</div>
+                                    <?php if (isset($details['total_mandalams'])): ?>
+                                        <div class="h6 mb-0 font-weight-bold text-gray-800">Total Mandalams: <span class="float-right"><?php echo $details['total_mandalams']; ?></span></div>
+                                    <?php endif; ?>
+                                    <?php if (isset($details['total_localbodies'])): ?>
+                                        <div class="h6 mb-0 font-weight-bold text-gray-800">Total Local Bodies: <span class="float-right"><?php echo $details['total_localbodies']; ?></span></div>
+                                    <?php endif; ?>
+                                    <?php if (isset($details['total_units'])): ?>
+                                        <div class="h6 mb-0 font-weight-bold text-gray-800">Total Units: <span class="float-right"><?php echo $details['total_units']; ?></span></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- <div class="summary-cards">
                 <div class="card custom-card">
                     <h3>Target Amount</h3>
                     <p>₹<?php echo number_format($totalTarget, 2); ?></p>
@@ -618,10 +705,76 @@ try {
                         <p><?php echo $details['total_units']; ?></p>
                     </div>
                 <?php endif; ?>
-            </div>
+            </div> -->
 
-            <h5 class="text-center mb-3">Collected Through Application</h5>
-            <div class="summary-cards">
+            <div class="row">
+                <h5 class="text-center mb-3">Collected Through Application</h5>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Online</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalOnlineCollected, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fa-brands fa-google-pay fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-danger shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        Offline</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCashCollected, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-money-bill fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Total Collected App</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedMobile, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-mobile fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-dark shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                        Donors</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($totalDonors); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="summary-cards">
                 <div class="card custom-card">
                     <h3>Online</h3>
                     <p>₹<?php echo number_format($totalOnlineCollected, 2); ?></p>
@@ -638,10 +791,44 @@ try {
                     <h3>Donors</h3>
                     <p><?php echo number_format($totalDonors); ?></p>
                 </div>
-            </div>
+            </div> -->
 
-            <h5 class="text-center mb-3">Collected Through Coupons</h5>
-            <div class="summary-cards">
+            <div class="row">
+                <h5 class="text-center mb-3">Collected Through Coupons</h5>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Total Collected App</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedPaper, 2); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-mobile fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-dark shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                        Donors</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">-</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="summary-cards">
                 <div class="card custom-card">
                     <h3>Total Collected</h3>
                     <p>₹<?php echo number_format($totalCollectedPaper, 2); ?></p>
@@ -651,7 +838,29 @@ try {
                     <p>-</p>
                 </div>
             </div>
+ -->
 
+            <?php if (!empty($collections) && ($level !== "unit" || !$id)): ?>
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Collection</h6>
+                    </div>
+                    <div class="card-body">
+                        <?php foreach ($collections as $row): ?>
+                            <?php
+                            $percentage = $row['target_amount'] > 0 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100 : 0;
+                            $progressBarClasses = ['danger', 'success', 'info', 'warning', 'dark', 'primary', 'secondary'];
+                            $randomClass = $progressBarClasses[array_rand($progressBarClasses)]; ?>
+                            <h4 class="small font-weight-bold"><?php echo  htmlspecialchars($row['name']); ?> <span class="float-right"><?php echo number_format($percentage) . '%'; ?>
+                                </span></h4>
+                            <div class="progress mb-4">
+                                <div class="progress-bar bg-<?php echo $randomClass; ?>" role="progressbar" style="width: <?php echo number_format($percentage); ?>%"
+                                    aria-valuenow="<?php echo number_format($percentage, 2); ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div class="d-flex justify-content-between">
                 <h3>Collection Reports</h3>
@@ -722,7 +931,7 @@ try {
                                             <?php $percentage = $row['target_amount'] > 0
                                                 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100
                                                 : 0;
-                                            echo number_format($percentage, 2) . '%';
+                                            echo number_format($percentage) . '%';
                                             ?>
                                         </td>
                                         <td><?php echo $row['total_donations']; ?></td>
@@ -789,34 +998,34 @@ try {
                         </div>
 
                         <?php
-                        $i = 0;
-                        while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
-                            $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
-                            echo '<div class="mb-3">
-                            <label class="form-label">' . $mainName . '</label>
-                                <select name="' . strtolower($mainName) . '" id="filter_' . $mainName . '" class="form-control">
-                                    <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
-                            if ($i == 0) {
-                                $mainTable = $mainTables[$i];
-                                $mainParentField = $mainParentFields[$i];
-                                $query = "SELECT id, name FROM {$mainTable} WHERE 1";
-                                if ($mainParentField) {
-                                    $query .= " AND {$mainParentField} = ?";
-                                    $stmt = $pdo->prepare($query);
-                                    $stmt->execute([$_SESSION['user_level_id']]);
-                                } else {
-                                    $stmt = $pdo->query($query);
-                                }
-                                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                    $selected = '';
-                                    echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
-                                }
-                            }
-                            echo '</select>
-                                <div class="invalid-feedback">' . $mainName . ' is required</div>
-                            </div>';
-                            $i++;
-                        }
+                        // $i = 0;
+                        // while ($i < array_search($managingRole, $currentManages) && $currentManages[$i] !== 'collector') {
+                        //     $mainName = ucfirst(str_replace('_admin', '', $currentManages[$i]));
+                        //     echo '<div class="mb-3">
+                        //     <label class="form-label">' . $mainName . '</label>
+                        //         <select name="' . strtolower($mainName) . '" id="filter_' . $mainName . '" class="form-control">
+                        //             <option value="" hidden>Select ' . $mainName . '</option><option value="" disabled>Select Previous First</option>';
+                        //     if ($i == 0) {
+                        //         $mainTable = $mainTables[$i];
+                        //         $mainParentField = $mainParentFields[$i];
+                        //         $query = "SELECT id, name FROM {$mainTable} WHERE 1";
+                        //         if ($mainParentField) {
+                        //             $query .= " AND {$mainParentField} = ?";
+                        //             $stmt = $pdo->prepare($query);
+                        //             $stmt->execute([$_SESSION['user_level_id']]);
+                        //         } else {
+                        //             $stmt = $pdo->query($query);
+                        //         }
+                        //         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                        //             $selected = '';
+                        //             echo "<option value=\"{$row['id']}\" $selected>{$row['name']}</option>";
+                        //         }
+                        //     }
+                        //     echo '</select>
+                        //         <div class="invalid-feedback">' . $mainName . ' is required</div>
+                        //     </div>';
+                        //     $i++;
+                        // }
                         ?>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
@@ -858,52 +1067,52 @@ try {
             $(`#${formId}`).removeClass('d-none');
         }
 
-        $('#filter_District').change(async function() {
-            var districtId = $(this).val();
-            if (districtId) {
-                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
-                loadMandalams(districtId).then((response) => {
-                    let mandalams = JSON.parse(response);
-                    let options = '<option value="" hidden>Select Mandalam</option>';
-                    if (mandalams.length) {
-                        mandalams.forEach(function(mandalam) {
-                            options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
-                        });
-                    } else {
-                        options += `<option value="" disabled>No Mandalams Under Selected District</option>`
-                    }
-                    $('#filter_Mandalam').html(options);
-                }).catch((error) => {
-                    $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-                });
-            } else {
-                $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
-                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-            }
-        });
+        // $('#filter_District').change(async function() {
+        //     var districtId = $(this).val();
+        //     if (districtId) {
+        //         $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Loading Mandalams...</option>');
+        //         loadMandalams(districtId).then((response) => {
+        //             let mandalams = JSON.parse(response);
+        //             let options = '<option value="" hidden>Select Mandalam</option>';
+        //             if (mandalams.length) {
+        //                 mandalams.forEach(function(mandalam) {
+        //                     options += `<option value="${mandalam.id}">${mandalam.name}</option>`;
+        //                 });
+        //             } else {
+        //                 options += `<option value="" disabled>No Mandalams Under Selected District</option>`
+        //             }
+        //             $('#filter_Mandalam').html(options);
+        //         }).catch((error) => {
+        //             $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option><option value="" disabled>Error Loading Mandalam</option>');
+        //             $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+        //         });
+        //     } else {
+        //         $('#filter_Mandalam').html('<option value="" hidden>Select Mandalam</option>');
+        //         $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+        //     }
+        // });
 
-        $('#filter_Mandalam').change(function() {
-            if ($(this).val()) {
-                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
-                loadLocalbodies($(this).val()).then((response) => {
-                    let localbodies = JSON.parse(response);
-                    let options = '<option value="" hidden>Select Localbody</option>';
-                    if (localbodies.length) {
-                        localbodies.forEach(function(localbody) {
-                            options += `<option value="${localbody.id}">${localbody.name}</option>`;
-                        });
-                    } else {
-                        options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
-                    }
-                    $('#filter_Localbody').html(options);
-                }).catch((error) => {
-                    $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
-                });
-            } else {
-                $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
-            }
-        });
+        // $('#filter_Mandalam').change(function() {
+        //     if ($(this).val()) {
+        //         $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Loading Localbodies...</option>');
+        //         loadLocalbodies($(this).val()).then((response) => {
+        //             let localbodies = JSON.parse(response);
+        //             let options = '<option value="" hidden>Select Localbody</option>';
+        //             if (localbodies.length) {
+        //                 localbodies.forEach(function(localbody) {
+        //                     options += `<option value="${localbody.id}">${localbody.name}</option>`;
+        //                 });
+        //             } else {
+        //                 options += `<option value="" disabled>No Localbodies Under Selected Mandalam</option>`
+        //             }
+        //             $('#filter_Localbody').html(options);
+        //         }).catch((error) => {
+        //             $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option><option value="" disabled>Error Loading Localbodies</option>');
+        //         });
+        //     } else {
+        //         $('#filter_Localbody').html('<option value="" hidden>Select Localbody</option>');
+        //     }
+        // });
 
         // Filter Table
         $('#filterForm').submit(function(event) {
