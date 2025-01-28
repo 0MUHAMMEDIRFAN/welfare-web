@@ -272,7 +272,7 @@ try {
             <?php endif; ?>
 
             <p class="m-0">
-                <a href="../dashboard/dashboard.php" class=" btn btn-light">← Back</a>
+                <a href="../dashboard/dashboard.php" class=" btn btn-light">← <span class="d-none d-md-inline">Back</span></a>
             </p>
         </div>
 
@@ -305,10 +305,10 @@ try {
             <div class="card mb-1">
                 <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
-                        <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>s Management
+                        <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>s <span class="d-none d-sm-inline">Management</span>
                     </h5>
                     <button class="btn btn-primary btn-sm" onclick="window.location.href='add_admin.php?type=<?php echo $managingRole; ?>'">
-                        Add <?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?>
+                        Add <span class="d-none d-md-inline"><?php echo ucfirst(str_replace('_', ' ', $managingRole)); ?></span>
                     </button>
                 </div>
             </div>

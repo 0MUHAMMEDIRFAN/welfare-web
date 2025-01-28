@@ -403,7 +403,7 @@ try {
         <div class="content d-flex gap-1 justify-content-between">
             <h2><?php echo $childHeading; ?> Summary</h2>
             <p class="">
-                <a href="../reports/view_reports.php" class="btn btn-light">All Reports →</a>
+                <a href="../reports/view_reports.php<?php echo $currentUserRole == 'unit_admin' ? '?level=unit&id=' . $parent_id : ''; ?>" class="btn btn-light">All Reports →</a>
             </p>
         </div>
         <div class="content table-responsive">

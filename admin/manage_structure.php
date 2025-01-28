@@ -57,7 +57,7 @@ $currentManages = $currentLevel['manages'];
 $mainParentFields = $currentLevel['parent_field'];
 
 if (!isset($currentLevel)) {
-    header("Location: {$_SESSION['level']}.php");
+    header("Location: dashboard.php");
     exit();
 }
 
@@ -227,7 +227,7 @@ try {
                 <h2>Manage <?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
             <?php endif; ?>
             <p class="">
-                <a href="../dashboard/dashboard.php" class="btn btn-light">← Back</a>
+                <a href="../dashboard/dashboard.php" class="btn btn-light">← <span class="d-none d-sm-inline">Back</span></a>
                 <!-- <a href="../dashboard/<?php echo $_SESSION['level']; ?>.php" class="btn btn-light">← Back</a> -->
             </p>
         </div>
@@ -329,7 +329,7 @@ try {
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($items); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
                                             <a href="?type=<?php echo $managingRole; ?>&page=<?php echo max(1, $page - 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
-                                                ← Prev
+                                                ← <span class="d-none d-sm-inline">Prev</span>
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
                                                 <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
@@ -339,7 +339,7 @@ try {
                                                 <?php endfor; ?>
                                             </select>
                                             <a href="?type=<?php echo $managingRole; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo htmlspecialchars($searchParams); ?><?php echo htmlspecialchars($filterParams); ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
-                                                Next →
+                                                <span class="d-none d-sm-inline">Next</span> →
                                             </a>
                                         </div>
                                     </div>
