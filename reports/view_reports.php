@@ -210,6 +210,13 @@ $currentUserParent = $currentLevel['parent_field'][0];
 
 
 try {
+
+    $currentUserLevelChildIdField = $levelHierarchy[$level]['parent_field'][1] ?? '';
+    $currentUserLevelIdField = $levelHierarchy[$level]['parent_field'][0];
+    $currentUserLevelChildTable = $levelHierarchy[$level]['child_tables'][0];
+    $currentUserLevelTable = $levelHierarchy[$level]['parent_field_table'][0];
+
+
     // Get the current level details  
     // $dynamicQuery = "";
     // $currentAlias = "dn";
@@ -221,6 +228,12 @@ try {
     //     $currentAlias = $alias;
     //     $i--;
     // }
+    $levelQuery1 = "SELECT a.*,
+    FROM " . ($id ? $currentUserLevelChildTable : $currentUserLevelTable) . " a 
+    WHERE" . $id ? "a.id = $id " : ($currentUserParent ? " $currentUserParent = $currentUserLevelId" : "") . "
+    ";
+
+
     if ($id) {
         $levelQuery = match ($level) {
             'district' => "SELECT di.*,   
@@ -373,10 +386,7 @@ try {
     }
 
     // Get collection Table details  
-    $currentUserLevelChildIdField = $levelHierarchy[$level]['parent_field'][1] ?? '';
-    $currentUserLevelIdField = $levelHierarchy[$level]['parent_field'][0];
-    $currentUserLevelChildTable = $levelHierarchy[$level]['child_tables'][0];
-    $currentUserLevelTable = $levelHierarchy[$level]['parent_field_table'][0];
+
     $collectionQuery = $level !== "unit" || !$id ? "SELECT SQL_CALC_FOUND_ROWS 
             a.name as name ,a.id,a.target_amount,
             (SELECT COALESCE(SUM(d.amount),0) FROM donations d
@@ -606,160 +616,139 @@ try {
             </div>
 
 
-            <!-- <div class="summary-cards">
-                <div class="card custom-card">
-                    <h3>Target Amount</h3>
-                    <p>₹<?php echo number_format($totalTarget, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Total Collected</h3>
-                    <p class="<?php echo $totalTarget <= $totalCollected ? 'text-success' : 'text-danger'; ?>">₹<?php echo number_format($totalCollected, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Percentage</h3>
-                    <p><?php echo $totalTarget > 0 ? number_format(($totalCollected / $totalTarget) * 100, 2) : 0; ?>%</p>
-                </div>
-                <?php if (isset($details['total_mandalams'])): ?>
-                    <div class="card custom-card">
-                        <h3>Total Mandalams</h3>
-                        <p><?php echo $details['total_mandalams']; ?></p>
-                    </div>
-                <?php endif; ?>
-                <?php if (isset($details['total_localbodies'])): ?>
-                    <div class="card custom-card">
-                        <h3>Total Local Bodies</h3>
-                        <p><?php echo $details['total_localbodies']; ?></p>
-                    </div>
-                <?php endif; ?>
-                <?php if (isset($details['total_units'])): ?>
-                    <div class="card custom-card">
-                        <h3>Total Units</h3>
-                        <p><?php echo $details['total_units']; ?></p>
-                    </div>
-                <?php endif; ?>
-            </div> -->
 
-            <div class="row">
-                <h5 class="text-center mb-3">Collected Through Application</h5>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning shadow h-100 py-2">
+            <div class="row px-2">
+                <?php if (!empty($collections) && ($level !== "unit" || !$id)): ?>
+                    <div class="card shadow mb-4 col-md-6 p-0">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Collection</h6>
+                        </div>
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Online</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalOnlineCollected, 2); ?></div>
+                            <?php foreach ($collections as $row): ?>
+                                <?php
+                                $percentage = $row['target_amount'] > 0 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100 : 0;
+                                $progressBarClasses = ['danger', 'success', 'info', 'warning', 'dark', 'primary', 'secondary'];
+                                $randomClass = $progressBarClasses[array_rand($progressBarClasses)]; ?>
+                                <h4 class="small font-weight-bold"><?php echo  htmlspecialchars($row['name']); ?> <span class="float-right"><?php echo number_format($percentage) . '%'; ?>
+                                    </span></h4>
+                                <div class="progress mb-4">
+                                    <div class="progress-bar bg-<?php echo $randomClass; ?>" role="progressbar" style="width: <?php echo number_format($percentage); ?>%"
+                                        aria-valuenow="<?php echo number_format($percentage, 2); ?>" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
-                                <div class="col-auto">
-                                    <i class="fa-brands fa-google-pay fa-2x text-gray-300"></i>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+
+                <div class="<?php echo (empty($collections) || ($level == "unit" && $id)) ? 'col-md-12' : 'col-md-6' ?> ">
+                    <div class="row col-">
+                        <h5 class="text-center mb-3">Collected Through Application</h5>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Online</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalOnlineCollected, 2); ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fa-brands fa-google-pay fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-danger shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                Offline</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCashCollected, 2); ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-money-bill fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Collected App</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedMobile, 2); ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-mobile fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-dark shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                                Donors</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($totalDonors); ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-danger shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                        Offline</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCashCollected, 2); ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-money-bill fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Total Collected App</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedMobile, 2); ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-mobile fa-2x text-gray-300"></i>
+
+                    <div class="row col-">
+                        <h5 class="text-center mb-3">Collected Through Coupons</h5>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Collected</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedPaper, 2); ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-ticket fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-dark shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
-                                        Donors</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($totalDonors); ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                        <div class="col-xl-6 col-md-12 col-sm-6 mb-4">
+                            <div class="card border-left-dark shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                                Donors</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">-</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- <div class="summary-cards">
-                <div class="card custom-card">
-                    <h3>Online</h3>
-                    <p>₹<?php echo number_format($totalOnlineCollected, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Offline</h3>
-                    <p>₹<?php echo number_format($totalCashCollected, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Total Collected App</h3>
-                    <p>₹<?php echo number_format($totalCollectedMobile, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Donors</h3>
-                    <p><?php echo number_format($totalDonors); ?></p>
-                </div>
-            </div> -->
 
-            <div class="row">
-                <h5 class="text-center mb-3">Collected Through Coupons</h5>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Total Collected App</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">₹<?php echo number_format($totalCollectedPaper, 2); ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-mobile fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-dark shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
-                                        Donors</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-users fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <!-- <div class="summary-cards">
                 <div class="card custom-card">
                     <h3>Total Collected</h3>
@@ -772,27 +761,6 @@ try {
             </div>
  -->
 
-            <?php if (!empty($collections) && ($level !== "unit" || !$id)): ?>
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Collection</h6>
-                    </div>
-                    <div class="card-body">
-                        <?php foreach ($collections as $row): ?>
-                            <?php
-                            $percentage = $row['target_amount'] > 0 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100 : 0;
-                            $progressBarClasses = ['danger', 'success', 'info', 'warning', 'dark', 'primary', 'secondary'];
-                            $randomClass = $progressBarClasses[array_rand($progressBarClasses)]; ?>
-                            <h4 class="small font-weight-bold"><?php echo  htmlspecialchars($row['name']); ?> <span class="float-right"><?php echo number_format($percentage) . '%'; ?>
-                                </span></h4>
-                            <div class="progress mb-4">
-                                <div class="progress-bar bg-<?php echo $randomClass; ?>" role="progressbar" style="width: <?php echo number_format($percentage); ?>%"
-                                    aria-valuenow="<?php echo number_format($percentage, 2); ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <div class="d-flex justify-content-between">
                 <h3>Collection Reports</h3>
