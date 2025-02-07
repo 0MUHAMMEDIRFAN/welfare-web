@@ -106,3 +106,112 @@
         default => throw new Exception("Invalid level")
     };
     
+
+
+    if ($id) {
+        $levelQuery = match ($level) {
+            'district' => "SELECT di.*,   
+                (SELECT COUNT(*) FROM mandalams WHERE district_id = $id) as total_mandalams,  
+                (SELECT COUNT(DISTINCT l.id) FROM localbodies l WHERE l.district_id = $id) as total_localbodies,  
+                (SELECT COUNT(DISTINCT u.id) FROM units u WHERE u.district_id = $id) as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id WHERE u.district_id = $id $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.district_id = $id AND d.payment_type = 'CASH' $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.district_id = $id AND d.payment_type != 'CASH' $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.district_id = $id $dateFilterQuery1) as total_donors
+            FROM districts di WHERE di.id = $id",
+            'mandalam' => "SELECT m.*, d.name as district_name,  
+                (SELECT COUNT(*) FROM localbodies WHERE mandalam_id = $id) as total_localbodies,  
+                (SELECT COUNT(DISTINCT u.id) FROM units u WHERE u.mandalam_id = $id) as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id WHERE u.mandalam_id = $id $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.mandalam_id = $id AND d.payment_type = 'CASH' $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.mandalam_id = $id AND d.payment_type != 'CASH' $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.mandalam_id = $id $dateFilterQuery1) as total_donors
+            FROM mandalams m   
+            JOIN districts d ON m.district_id = d.id WHERE m.id = $id",
+            'localbody' => "SELECT l.*, m.name as mandalam_name, d.name as district_name,  
+                (SELECT COUNT(*) FROM units WHERE localbody_id = $id) as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id WHERE u.localbody_id = $id $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.localbody_id = $id AND d.payment_type = 'CASH' $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.localbody_id = $id AND d.payment_type != 'CASH' $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id WHERE u.localbody_id = $id $dateFilterQuery1) as total_donors
+            FROM localbodies l   
+            JOIN mandalams m ON l.mandalam_id = m.id  
+            JOIN districts d ON m.district_id = d.id WHERE l.id = $id",
+            'unit' => "SELECT u.*, l.name as localbody_name, m.name as mandalam_name, d.name as district_name,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                WHERE cr.unit_id = u.id $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                WHERE d.unit_id = u.id AND d.payment_type = 'CASH' $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                WHERE d.unit_id = u.id AND d.payment_type != 'CASH' $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                WHERE d.unit_id = u.id $dateFilterQuery1) as total_donors
+            FROM units u   
+            JOIN localbodies l ON u.localbody_id = l.id  
+            JOIN mandalams m ON l.mandalam_id = m.id  
+            JOIN districts d ON m.district_id = d.id WHERE u.id = $id",
+            default => throw new Exception("Invalid level")
+        };
+    } else {
+        $levelQuery = match ($level) {
+            'district' => "SELECT COUNT(*) as total_districts,
+                (SELECT COUNT(DISTINCT m.id) FROM mandalams m) as total_mandalams,
+                (SELECT COUNT(DISTINCT l.id) FROM localbodies l) as total_localbodies,  
+                (SELECT COUNT(DISTINCT u.id) FROM units u) as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type = 'CASH' $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type != 'CASH' $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id $dateFilterQuery1) as total_donors
+            FROM districts WHERE 1=1",
+            'mandalam' => "SELECT COUNT(*) as total_mandalams,  
+                (SELECT COUNT(DISTINCT l.id) FROM localbodies l" . ($currentUserParent ? " WHERE l.$currentUserParent = $currentUserLevelId" : "") . ") as total_localbodies,
+                (SELECT COUNT(DISTINCT u.id) FROM units u" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . ") as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id " . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type = 'CASH' " . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type != 'CASH' " . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id " . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_donors
+            FROM mandalams WHERE 1=1" . ($currentUserParent ? " AND $currentUserParent = $currentUserLevelId" : ""),
+            'localbody' => "SELECT COUNT(*) as total_localbodies,
+                (SELECT COUNT(DISTINCT u.id) FROM units u" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . ") as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type = 'CASH'" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type != 'CASH'" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_donors
+            FROM localbodies WHERE 1=1" . ($currentUserParent ? " AND $currentUserParent = $currentUserLevelId" : ""),
+            'unit' => "SELECT COUNT(*) as total_units,
+                (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr
+                JOIN units u ON cr.unit_id = u.id" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery2) as total_collection_paper,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type = 'CASH'" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_offline,
+                (SELECT COALESCE(SUM(d.amount), 0) FROM donations d
+                JOIN units u ON d.unit_id = u.id AND d.payment_type != 'CASH'" . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . " $dateFilterQuery1) as total_collection_online,
+                (SELECT COUNT(DISTINCT d.id) FROM donations d
+                JOIN units u ON d.unit_id = u.id " . ($currentUserParent ? " WHERE u.$currentUserParent = $currentUserLevelId" : "") . ") as total_donors
+            FROM units WHERE 1=1" . ($currentUserParent ? " AND $currentUserParent = $currentUserLevelId" : ""),
+            default => throw new Exception("Invalid level")
+        };
+    }
