@@ -1,23 +1,28 @@
-name: Deploy to Cloudflare
+name: Auto Deploy to Server
 
 on:
   push:
     branches:
-      - master  # Trigger this workflow when changes are pushed to the "master" branch
+      - master  # Change if using another branch
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Use a virtual machine with Ubuntu to run the workflow
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Add SSH Key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_WELFARE_PRIVATE_KEY }}
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_WELFARE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_WELFARE_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to Cloudflare
-        run: ssh -o StrictHostKeyChecking=no \
-              master_vasradkbbb@167.172.226.184
+    - name: Deploy via SSH
+      run: |
+        ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_WELFARE_USER }}@${{ secrets.SSH_WELFARE_HOST }} <<EOF
+          cd ~/applications/czpwckszqj/public_html
+          git pull origin master
+        EOF
