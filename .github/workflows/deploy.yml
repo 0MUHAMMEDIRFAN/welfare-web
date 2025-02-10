@@ -20,4 +20,4 @@ jobs:
 
       - name: Deploy to Cloudflare
         run: ssh -o StrictHostKeyChecking=no \
-              ${{ secrets.SSH_WELFARE_USER }}@${{ secrets.SSH_WELFARE_HOST }} \
+              master_vasradkbbb@167.172.226.184
