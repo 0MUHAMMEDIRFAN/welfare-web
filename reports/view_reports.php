@@ -17,7 +17,9 @@ $offset = ($page - 1) * $limit;
 $totalItems = 0;
 $fromDate = $_GET['from_date'] ?? '';
 $toDate = $_GET['to_date'] ?? '';
-$totalAmountFliter = $_GET['total_amount_fliter'] ?? '';
+$totalAmountFliter = $_GET['total_amount_filter'] ?? '';
+$totalPaperFliter = $_GET['total_paper_filter'] ?? '';
+$totalAppFliter = $_GET['total_app_filter'] ?? '';
 $sortField = $_GET['sort_field'] ?? '';
 $sortOrder = $_GET['sort_order'] ?? '';
 
@@ -33,25 +35,63 @@ if ($sortField) {
 }
 
 $filteredText = "";
+$filteredDateText = "";
 
 $dateFilterQuery1 = '';
 $dateFilterQuery2 = '';
-$dateFilterParams = '';
+$FilterParams = '';
+$FilterDateParams = '';
 if ($fromDate) {
     $dateFilterQuery1 .= " AND d.created_at >= '$fromDate'";
     $dateFilterQuery2 .= " AND cr.collection_date >= '$fromDate'";
-    $dateFilterParams .= "&from_date=$fromDate";
-    $filteredText = "Filtered By Date";
+    $FilterDateParams .= "&from_date=$fromDate";
+    $filteredDateText = ($toDate ? "" : "After ") . $fromDate;
 }
 if ($toDate) {
     $dateFilterQuery1 .= " AND d.created_at <= '$toDate'";
     $dateFilterQuery2 .= " AND cr.collection_date <= '$toDate'";
-    $dateFilterParams .= "&to_date=$toDate";
-    $filteredText = "Filtered By Date";
+    $FilterDateParams .= "&to_date=$toDate";
+    $filteredDateText .= ($fromDate ? " - " : "Before ") . $toDate;
 }
-$tableFilterQuery = '';
+$tableFilterQuery = 'HAVING 1=1';
 if ($totalAmountFliter) {
-    $tableFilterQuery .= " AND ";
+    if (strpos($totalAmountFliter, '<') !== false) {
+        $value = str_replace('<', '', $totalAmountFliter);
+        $tableFilterQuery .= " AND total_collected <= $value";
+    } elseif (strpos($totalAmountFliter, '>') !== false) {
+        $value = str_replace('>', '', $totalAmountFliter);
+        $tableFilterQuery .= " AND total_collected >= $value";
+    } else {
+        $tableFilterQuery .= " AND total_collected = $totalAmountFliter";
+    }
+    $FilterParams .= "&total_amount_filter=$totalAmountFliter";
+    $filteredText = "Filters Applied";
+}
+if ($totalPaperFliter) {
+    if (strpos($totalPaperFliter, '<') !== false) {
+        $value = str_replace('<', '', $totalPaperFliter);
+        $tableFilterQuery .= " AND total_collected_paper <= $value";
+    } elseif (strpos($totalPaperFliter, '>') !== false) {
+        $value = str_replace('>', '', $totalPaperFliter);
+        $tableFilterQuery .= " AND total_collected_paper >= $value";
+    } else {
+        $tableFilterQuery .= " AND total_collected_paper = $totalPaperFliter";
+    }
+    $FilterParams .= "&total_paper_filter=$totalPaperFliter";
+    $filteredText = "Filters Applied";
+}
+if ($totalAppFliter) {
+    if (strpos($totalAppFliter, '<') !== false) {
+        $value = str_replace('<', '', $totalAppFliter);
+        $tableFilterQuery .= " AND total_collected_app <= $value";
+    } elseif (strpos($totalAppFliter, '>') !== false) {
+        $value = str_replace('>', '', $totalAppFliter);
+        $tableFilterQuery .= " AND total_collected_app >= $value";
+    } else {
+        $tableFilterQuery .= " AND total_collected_app = $totalAppFliter";
+    }
+    $FilterParams .= "&total_app_filter=$totalAppFliter";
+    $filteredText = "Filters Applied";
 }
 
 // // Filter options
@@ -286,7 +326,7 @@ try {
     $dynamicOrgParentStructQuery 
     " . ($id ? " WHERE a.id = $id" : ($currentUserParent ? " WHERE a.$currentUserParent = $currentUserLevelId" : ""));
 
-    error_log($levelQuery . PHP_EOL, 3, "./log.log");
+    // error_log($levelQuery . PHP_EOL, 3, "./log.log");
 
     $stmt = $pdo->prepare($levelQuery);
     $stmt->execute();
@@ -320,22 +360,25 @@ try {
     }
 
     // Get collection Table details  
-
+    $collectionQryCndtn =  (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d." : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id ";
     $collectionQuery = $level !== "unit" || !$id ? "SELECT SQL_CALC_FOUND_ROWS 
             a.name as name ,a.id,a.target_amount,
             (SELECT COALESCE(SUM(d.amount),0) FROM donations d
-            " . (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d" : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id $dateFilterQuery1) as total_collected_app,
+            $collectionQryCndtn $dateFilterQuery1) as total_collected_app,
             (SELECT COUNT(DISTINCT d.id) FROM donations d 
-             " . (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d" : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id $dateFilterQuery1) as total_donations,
-            (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr 
-             " . (($level == "localbody" && $id) || $level == "unit" ?  "WHERE cr" : "JOIN units u ON cr.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id $dateFilterQuery2) as total_collected_paper,
+             $collectionQryCndtn $dateFilterQuery1) as total_donations,
+            (SELECT COALESCE(SUM(d.amount), 0) FROM collection_reports d 
+             $collectionQryCndtn $dateFilterQuery1) as total_collected_paper,
             ((SELECT COALESCE(SUM(d.amount), 0) FROM donations d 
-              " . (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d" : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id $dateFilterQuery1) + 
-             (SELECT COALESCE(SUM(cr.amount), 0) FROM collection_reports cr 
-              " . (($level == "localbody" && $id) || $level == "unit" ?  "WHERE cr" : "JOIN units u ON cr.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id $dateFilterQuery2)) as total_collected
+              $collectionQryCndtn $dateFilterQuery1) + 
+             (SELECT COALESCE(SUM(d.amount), 0) FROM collection_reports d 
+              $collectionQryCndtn $dateFilterQuery1)) as total_collected,
+              (SELECT MAX(d.created_at) FROM donations d 
+              $collectionQryCndtn $dateFilterQuery1) as last_collected_date
     FROM " . ($id ? $currentOrgLevelChildTable : $currentOrgLevelTable) . " a
-    WHERE 1=1" . ($id ? " AND a.$currentOrgLevelIdField = $id" : ($currentUserParent ? " AND a.$currentUserParent = $currentUserLevelId" : "")) . "  
+    WHERE 1=1 " . ($id ? " AND a.$currentOrgLevelIdField = $id" : ($currentUserParent ? " AND a.$currentUserParent = $currentUserLevelId" : "")) . " 
     GROUP BY a.id, a.name, a.target_amount
+    $tableFilterQuery
     ORDER BY $sortField $sortOrder
     LIMIT $limit OFFSET $offset"
         : "SELECT SQL_CALC_FOUND_ROWS   
@@ -403,23 +446,21 @@ try {
 
 
     <?php if (!$id): ?>
-        <div class="container mt-4">
-            <div class="header d-flex gap-1">
-                <?php if (count($currentUserManages) > 1): ?>
-                    <div class="mb-3 d-flex flex-wrap gap-1">
-                        <?php foreach ($currentUserManages as $role): ?>
-                            <a href="?level=<?php echo str_replace('_admin', '', $role); ?>" class="btn <?php echo $managingRole ===  $role ? "btn-primary" : "btn-light" ?>">
-                                <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <h2><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
-                <?php endif; ?>
-                <p class="">
-                    <a href="../dashboard/dashboard.php" class="btn btn-light">← <span class="d-none d-sm-inline">Back</span></a>
-                </p>
-            </div>
+        <div class="container p-0 header d-flex gap-1 mt-4 align-items-center">
+            <?php if (count($currentUserManages) > 1): ?>
+                <div class="mb-3 d-flex flex-wrap gap-1 header-tabs">
+                    <?php foreach ($currentUserManages as $role): ?>
+                        <a href="?level=<?php echo str_replace('_admin', '', $role); ?>" class="btn <?php echo $managingRole ===  $role ? "btn-primary" : "" ?>">
+                            <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <h2><?php echo ucfirst(str_replace('_admin', '', $managingRole)); ?>s</h2>
+            <?php endif; ?>
+            <p class="">
+                <a href="../dashboard/dashboard.php" class="btn btn-light">← <span class="d-none d-sm-inline">Back</span></a>
+            </p>
         </div>
     <?php endif; ?>
 
@@ -433,10 +474,10 @@ try {
                 <?php endif; ?>
             </h2>
             <div class="mb-3 d-flex flex-wrap justify-content-end gap-1">
-                <?php if ($filteredText): ?>
-                    <a href="?level=<?php echo $level . $sortFieldParams; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
+                <?php if ($filteredDateText): ?>
+                    <a href="?level=<?php echo $level . $sortFieldParams . $FilterParams; ?>" class="btn btn-info"><?php echo $filteredDateText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
                 <?php endif; ?>
-                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fa-solid fa-list"></i> Filter Table</button>
+                <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterDateModal"><i class="fa-solid fa-list"></i> Select Date</button>
                 <?php if ($id): ?>
                     <p class="mb-0">
                         <?php if ($parent_id): ?>
@@ -558,7 +599,7 @@ try {
                             <h6 class="m-0 font-weight-bold text-primary">Collection</h6>
                         </div>
                         <div class="card-body">
-                            <?php foreach ($collections as $row): ?>
+                            <?php foreach (array_slice($collections, 0, 6) as $row): ?>
                                 <?php
                                 $percentage = $row['target_amount'] > 0 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100 : 0;
                                 $progressBarClasses = ['danger', 'success', 'info', 'warning', 'dark', 'primary', 'secondary'];
@@ -683,21 +724,14 @@ try {
             </div>
 
 
-            <!-- <div class="summary-cards">
-                <div class="card custom-card">
-                    <h3>Total Collected</h3>
-                    <p>₹<?php echo number_format($totalCollectedPaper, 2); ?></p>
-                </div>
-                <div class="card custom-card">
-                    <h3>Donors</h3>
-                    <p>-</p>
-                </div>
-            </div>
- -->
-
-
             <div class="d-flex justify-content-between">
                 <h3>Collection Reports</h3>
+                <div class="mb-3 d-flex flex-wrap justify-content-end gap-1">
+                    <?php if ($filteredText): ?>
+                        <a href="?level=<?php echo $level . $sortFieldParams . $FilterDateParams; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
+                    <?php endif; ?>
+                    <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fa-solid fa-list"></i> Filter Table</button>
+                </div>
             </div>
             <div class="content table-responsive">
                 <table>
@@ -712,7 +746,7 @@ try {
                                 <th>Collector</th>
                             <?php else: ?>
                                 <th>
-                                    <a href="<?php echo "?level=$level&id=$id&sort_field=id&sort_order=" . ($sortField === 'id' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $dateFilterParams; ?>" class="text-decoration-none text-dark">
+                                    <a href="<?php echo "?level=$level&id=$id&sort_field=id&sort_order=" . ($sortField === 'id' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $FilterParams; ?>" class="text-decoration-none text-dark">
                                         ID
                                         <?php echo $sortField === 'id' ? ($sortOrder === 'DESC' ? ' <i class="fa-solid fa-arrow-up-wide-short"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short"></i>') : ''; ?>
                                     </a>
@@ -720,22 +754,22 @@ try {
                                 <th>Name</th>
                                 <th>Target</th>
                                 <th>
-                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected_app&sort_order=" . ($sortField === 'total_collected_app' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $dateFilterParams; ?>" class="text-decoration-none text-dark">
+                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected_app&sort_order=" . ($sortField === 'total_collected_app' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $FilterParams; ?>" class="text-decoration-none text-dark">
                                         App Collection
                                         <?php echo $sortField === 'total_collected_app' ? ($sortOrder === 'DESC' ? ' <i class="fa-solid fa-arrow-up-wide-short"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short"></i>') : ''; ?>
                                 </th>
                                 <th>
-                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected_paper&sort_order=" . ($sortField === 'total_collected_paper' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $dateFilterParams; ?>" class="text-decoration-none text-dark">
+                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected_paper&sort_order=" . ($sortField === 'total_collected_paper' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $FilterParams; ?>" class="text-decoration-none text-dark">
                                         Paper Collection
                                         <?php echo $sortField === 'total_collected_paper' ? ($sortOrder === 'DESC' ? ' <i class="fa-solid fa-arrow-up-wide-short"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short"></i>') : ''; ?>
                                 </th>
                                 <th>
-                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected&sort_order=" . ($sortField === 'total_collected' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $dateFilterParams; ?>" class="text-decoration-none text-dark">
-                                        Total Collections
+                                    <a href="<?php echo "?level=$level&id=$id&sort_field=total_collected&sort_order=" . ($sortField === 'total_collected' && $sortOrder === 'DESC' ? 'ASC' : 'DESC') . $FilterParams; ?>" class="text-decoration-none text-dark">
+                                        Total Collection
                                         <?php echo $sortField === 'total_collected' ? ($sortOrder === 'DESC' ? ' <i class="fa-solid fa-arrow-up-wide-short"></i>' : ' <i class="fa-solid fa-arrow-down-wide-short"></i>') : ''; ?>
                                 </th>
                                 <th>Percentage</th>
-                                <th>Donors</th>
+                                <th>Last Collected</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -757,10 +791,10 @@ try {
                                     <?php else: ?>
                                         <td><?php echo htmlspecialchars($row['id']); ?></td>
                                         <td><?php echo htmlspecialchars($row['name']); ?></td>
-                                        <td>₹<?php echo number_format($row['target_amount'], 2); ?></td>
-                                        <td>₹<?php echo number_format($row['total_collected_app'], 2); ?></td>
-                                        <td>₹<?php echo number_format($row['total_collected_paper'], 2); ?></td>
-                                        <td>₹<?php echo number_format($row['total_collected_paper'] + $row['total_collected_app'], 2); ?></td>
+                                        <td>₹<?php echo number_format($row['target_amount']); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_app']); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_paper']); ?></td>
+                                        <td>₹<?php echo number_format($row['total_collected_paper'] + $row['total_collected_app']); ?> (<?php echo $row['total_donations']; ?>)</td>
                                         <td>
                                             <?php $percentage = $row['target_amount'] > 0
                                                 ? (($row['total_collected_app'] + $row['total_collected_paper']) / $row['target_amount']) * 100
@@ -768,7 +802,7 @@ try {
                                             echo number_format($percentage) . '%';
                                             ?>
                                         </td>
-                                        <td><?php echo $row['total_donations']; ?></td>
+                                        <td><?php echo ($row['last_collected_date'] ?? "-----"); ?></td>
                                     <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
@@ -781,17 +815,17 @@ try {
                                     <div class="text-center d-flex justify-content-between align-items-center gap-2 small">
                                         <p class="align-middle h-100 m-0">Total : <?php echo count($collections); ?> / <?php echo $totalItems; ?></p>
                                         <div class="d-flex justify-content-center align-items-center gap-2">
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $dateFilterParams . $sortFieldParams; ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo max(1, $page - 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $FilterParams . $sortFieldParams; ?>" class="btn btn-light btn-sm <?php echo $page == 1 ? 'disabled' : ''; ?>">
                                                 ← Prev
                                             </a>
                                             <select class="form-select d-inline w-auto form-select-sm" onchange="location = this.value;">
                                                 <?php for ($i = 1; $i <= ceil($totalItems / $limit); $i++): ?>
-                                                    <option value="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo $i; ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $dateFilterParams . $sortFieldParams; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
+                                                    <option value="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo $i; ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $FilterParams . $sortFieldParams; ?>" <?php echo $i == $page ? 'selected' : ''; ?>>
                                                         Page <?php echo $i; ?>
                                                     </option>
                                                 <?php endfor; ?>
                                             </select>
-                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $dateFilterParams . $sortFieldParams; ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
+                                            <a href="?level=<?php echo $level; ?>&id=<?php echo $id; ?>&page=<?php echo min(ceil($totalItems / $limit), $page + 1); ?><?php echo $parent_id ? '&parent_id=' . $parent_id : ''; ?><?php echo $FilterParams . $sortFieldParams; ?>" class="btn btn-light btn-sm <?php echo $page == ceil($totalItems / $limit) ? 'disabled' : ''; ?>">
                                                 Next →
                                             </a>
                                         </div>
@@ -820,17 +854,39 @@ try {
                         </div>
                     </div>
                     <form id="filterForm">
+                        <label for="total_amount_condition" class="form-label">Total Amount</label>
                         <div class="d-flex gap-2 flex-sm-nowrap flex-wrap">
-                            <div class="mb-3 w-100">
-                                <label for="from_date" class="form-label">From</label>
-                                <input type="date" name="from_date" id="from_date" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($fromDate); ?>">
-                            </div>
-                            <div class="mb-3 w-100">
-                                <label for="to_date" class="form-label">To</label>
-                                <input type="date" name="to_date" id="to_date" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($toDate); ?>">
+                            <div class="mb-3 w-100 input-group">
+                                <select name="total_amount_condition" id="total_amount_condition" class="input-group-prepend" style="max-width: 100px;" value="<">
+                                    <option value="<">Below</option>
+                                    <option value=">">Above</option>
+                                    <option value="">Equals</option>
+                                </select>
+                                <input type="number" name="total_amount_filter" id="total_amount_filter" placeholder="Amount" class="form-control" value="">
                             </div>
                         </div>
-                        
+                        <label for="total_paper_condition" class="form-label">Paper Collection</label>
+                        <div class="d-flex gap-2 flex-sm-nowrap flex-wrap">
+                            <div class="mb-3 w-100 input-group">
+                                <select name="total_paper_condition" id="total_paper_condition" class="input-group-prepend" style="max-width: 100px;" value="<">
+                                    <option value="<">Below</option>
+                                    <option value=">">Above</option>
+                                    <option value="">Equals</option>
+                                </select>
+                                <input type="number" name="total_paper_filter" id="total_paper_filter" placeholder="Amount" class="form-control" value="">
+                            </div>
+                        </div>
+                        <label for="total_app_condition" class="form-label">App Collection</label>
+                        <div class="d-flex gap-2 flex-sm-nowrap flex-wrap">
+                            <div class="mb-3 w-100 input-group">
+                                <select name="total_app_condition" id="total_app_condition" class="input-group-prepend" style="max-width: 100px;" value="<">
+                                    <option value="<">Below</option>
+                                    <option value=">">Above</option>
+                                    <option value="">Equals</option>
+                                </select>
+                                <input type="number" name="total_app_filter" id="total_app_filter" placeholder="Amount" class="form-control" value="">
+                            </div>
+                        </div>
 
                         <?php
                         // $i = 0;
@@ -872,6 +928,41 @@ try {
         </div>
     </div>
 
+    <!-- Filter Date Modal -->
+    <div class="modal fade" id="filterDateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="filterDateLoadingSpinner" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <form id="filterDateForm">
+                        <div class="d-flex gap-2 flex-sm-nowrap flex-wrap">
+                            <div class="mb-3 w-100">
+                                <label for="from_date" class="form-label">From</label>
+                                <input type="date" name="from_date" id="from_date" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($fromDate); ?>">
+                            </div>
+                            <div class="mb-3 w-100">
+                                <label for="to_date" class="form-label">To</label>
+                                <input type="date" name="to_date" id="to_date" class="form-control" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($toDate); ?>">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="saveFilterDateBtn">Submit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -901,6 +992,67 @@ try {
             $(`#${spinnerId}`).addClass('d-none');
             $(`#${formId}`).removeClass('d-none');
         }
+
+        // Filter Table
+        $('#filterForm').submit(function(event) {
+            event.preventDefault();
+            // const name = $('#item_name').val();
+            // const target = $('#item_target').val();
+            const $btn = $("#saveFilterBtn");
+
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            const formData = new FormData(this);
+
+            const totalAmountCondition = formData.get('total_amount_condition');
+            const totalAmountFilter = formData.get('total_amount_filter');
+            const totalPaperCondition = formData.get('total_paper_condition');
+            const totalPaperFilter = formData.get('total_paper_filter');
+            const totalAppCondition = formData.get('total_app_condition');
+            const totalAppFilter = formData.get('total_app_filter');
+
+            if (totalAmountFilter) {
+                params.set("total_amount_filter", `${totalAmountCondition}${totalAmountFilter}`);
+            }
+            if (totalPaperFilter) {
+                params.set("total_paper_filter", `${totalPaperCondition}${totalPaperFilter}`);
+            }
+            if (totalAppFilter) {
+                params.set("total_app_filter", `${totalAppCondition}${totalAppFilter}`);
+            }
+
+            window.location.href = `${url.pathname}?${params.toString()}`;
+            // console.log(`${url.pathname}?${params.toString()}`);
+
+            showLoading('filterForm', 'filterLoadingSpinner');
+            $btn.prop('disabled', true);
+
+
+        });
+
+        // Filter Date Table
+        $('#filterDateForm').submit(function(event) {
+            event.preventDefault();
+            // const name = $('#item_name').val();
+            // const target = $('#item_target').val();
+            const $btn = $("#saveFilterDateBtn");
+
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            const formData = new FormData(this);
+
+            formData.get('from_date') ? params.set('from_date', formData.get('from_date')) : "";
+            formData.get('to_date') ? params.set('to_date', formData.get('to_date')) : "";
+
+
+            window.location.href = `${url.pathname}?${params.toString()}`;
+            // console.log(`${url.pathname}?${params.toString()}`);
+
+            showLoading('filterDateForm', 'filterDateLoadingSpinner');
+            $btn.prop('disabled', true);
+
+
+        });
 
         // $('#filter_District').change(async function() {
         //     var districtId = $(this).val();
@@ -949,70 +1101,42 @@ try {
         //     }
         // });
 
-        // Filter Table
-        $('#filterForm').submit(function(event) {
-            event.preventDefault();
-            // const name = $('#item_name').val();
-            // const target = $('#item_target').val();
-            const $btn = $("#saveFilterBtn");
 
-            const url = new URL(window.location.href);
-            const params = new URLSearchParams(url.search);
-            const formData = new FormData(this);
+        // function loadMandalams(districtId) {
+        //     return new Promise((resolve, reject) => {
+        //         $.ajax({
+        //             url: 'ajax/get_mandalams.php',
+        //             method: 'GET',
+        //             data: {
+        //                 district_id: districtId
+        //             },
+        //             success: function(response) {
+        //                 resolve(response);
+        //             },
+        //             error: function(xhr, status, error) {
+        //                 reject(error);
+        //             }
+        //         });
+        //     });
+        // }
 
-            const totalAmountCondition = formData.get('total_amount_condition');
-            const totalAmountFilter = formData.get('total_amount_fliter');
-            if (totalAmountFilter) {
-                params.set("total_amount_fliter", `${totalAmountCondition}${totalAmountFilter}`);
-            }
-            formData.get('from_date') ? params.set('from_date', formData.get('from_date')) : "";
-            formData.get('to_date') ? params.set('to_date', formData.get('to_date')) : "";
-
-
-            window.location.href = `${url.pathname}?${params.toString()}`;
-            // console.log(`${url.pathname}?${params.toString()}`);
-
-            showLoading('filterForm', 'filterLoadingSpinner');
-            $btn.prop('disabled', true);
-
-
-        });
-
-        function loadMandalams(districtId) {
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    url: 'ajax/get_mandalams.php',
-                    method: 'GET',
-                    data: {
-                        district_id: districtId
-                    },
-                    success: function(response) {
-                        resolve(response);
-                    },
-                    error: function(xhr, status, error) {
-                        reject(error);
-                    }
-                });
-            });
-        }
-
-        function loadLocalbodies(mandalamId) {
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    url: 'ajax/get_localbodies.php',
-                    method: 'GET',
-                    data: {
-                        mandalam_id: mandalamId
-                    },
-                    success: function(response) {
-                        resolve(response);
-                    },
-                    error: function(xhr, status, error) {
-                        reject(error);
-                    }
-                });
-            });
-        }
+        // function loadLocalbodies(mandalamId) {
+        //     return new Promise((resolve, reject) => {
+        //         $.ajax({
+        //             url: 'ajax/get_localbodies.php',
+        //             method: 'GET',
+        //             data: {
+        //                 mandalam_id: mandalamId
+        //             },
+        //             success: function(response) {
+        //                 resolve(response);
+        //             },
+        //             error: function(xhr, status, error) {
+        //                 reject(error);
+        //             }
+        //         });
+        //     });
+        // }
     });
 </script>
 

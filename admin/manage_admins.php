@@ -261,9 +261,9 @@ try {
         <?php endif; ?>
         <div class="header">
             <?php if (count($currentLevel['manages']) > 1): ?>
-                <div class="d-flex gap-1 flex-wrap">
+                <div class="d-flex gap-1 flex-wrap header-tabs">
                     <?php foreach ($currentLevel['manages'] as $role): ?>
-                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-light" ?>">
+                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "" ?>">
                             <span class="d-none d-lg-inline"><?php echo ucfirst(str_replace('_', ' ', $role)); ?>s</span>
                             <span class="d-lg-none"><?php echo ucfirst(str_replace('_admin', '', $role)); ?>s</span>
                         </a>

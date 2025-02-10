@@ -215,9 +215,9 @@ try {
     <div class="container mt-4">
         <div class="header d-flex gap-1">
             <?php if (count($currentManages) > 1): ?>
-                <div class="mb-3 d-flex flex-wrap gap-1">
+                <div class="mb-3 d-flex flex-wrap gap-1 header-tabs">
                     <?php foreach ($currentManages as $role): ?>
-                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "btn-light" ?>">
+                        <a href="?type=<?php echo $role; ?>" class="btn <?php echo $managingRole === $role ? "btn-primary" : "" ?>">
                             <?php echo ucfirst(str_replace('_admin', '', $role)); ?>s
                         </a>
                     <?php endforeach; ?>
