@@ -360,8 +360,8 @@ try {
     }
 
     // Get collection Table details  
-    $collectionQryCndtn =  (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d." : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : $currentOrgLevelIdField) . " = a.id ";
-    $collectionQuery = $level !== "unit" || !$id ? "SELECT SQL_CALC_FOUND_ROWS 
+    $collectionQryCndtn =  (($level == "localbody" && $id) || $level == "unit" ?  "WHERE d." : "JOIN units u ON d.unit_id = u.id WHERE u.") . ($id ? $currentOrgLevelChildIdField : ($currentOrgLevelIdField == "id" ? "unit_id" : $currentOrgLevelIdField)) . " = a.id ";
+    $collectionQuery = ($level !== "unit" || !$id) ? "SELECT SQL_CALC_FOUND_ROWS 
             a.name as name ,a.id,a.target_amount,
             (SELECT COALESCE(SUM(d.amount),0) FROM donations d
             $collectionQryCndtn $dateFilterQuery1) as total_collected_app,
