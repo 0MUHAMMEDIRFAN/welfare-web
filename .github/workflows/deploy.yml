@@ -19,6 +19,6 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_WELFARE_PRIVATE_KEY }}
 
       - name: Deploy to Cloudflare
-        run: ssh -o StrictHostKeyChecking=no \
+        run: ssh -i \
               ${{ secrets.SSH_WELFARE_USER }}@${{ secrets.SSH_WELFARE_HOST }} \
               "cd /applications/czpwckszqj/public_html && git pull origin master"
