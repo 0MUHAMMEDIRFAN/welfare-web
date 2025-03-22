@@ -408,6 +408,30 @@ try {
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
+
+if (isset($_POST["export"])) {
+    if (empty($collections)) {
+        die("No data available to export.");
+    }
+
+    // Set headers for CSV file download
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=collections.csv');
+
+    // Open output stream
+    $output = fopen('php://output', 'w');
+
+    // Write headers
+    fputcsv($output, array_keys($collections[0]));
+
+    // Write rows
+    foreach ($collections as $row) {
+        fputcsv($output, $row);
+    }
+
+    fclose($output);
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -730,7 +754,11 @@ try {
                     <?php if ($filteredText): ?>
                         <a href="?level=<?php echo $level . $sortFieldParams . $FilterDateParams; ?>" class="btn btn-info"><?php echo $filteredText; ?> <i class="fa-solid fa-circle-xmark"></i></a>
                     <?php endif; ?>
+                    <form method="post">
+                        <button type="submit" name="export" class="btn btn-success"><i class="fa-solid fa-share"></i> Export</button>
+                    </form>
                     <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fa-solid fa-list"></i> Filter Table</button>
+
                 </div>
             </div>
             <div class="content table-responsive">
